@@ -80,93 +80,32 @@ const corePulse = new THREE.PointLight(0xffd6f5, 0, 8);
 corePulse.position.set(0, 0, -0.5);
 scene.add(corePulse);
 
-// ---------- 2. 캡슐: 다층 구조 (외각 투명 셸 + 내부 발광 코어 + 표면 디테일) ----------
+// ---------- 2. 캡슐: 한 덩어리, 우주·유니콘 이리데센스 ----------
 const capsuleGroup = new THREE.Group();
 capsuleGroup.rotation.z = Math.PI / 8;
 scene.add(capsuleGroup);
 
-// 2-a. 외각 셸 — 반투명 이리데센트 (안에 코어가 비쳐 보임)
+// 캡슐 본체 — 통짜 한 덩어리 (메탈 캡·룬링·내부코어 모두 제거)
+// 우주·유니콘 느낌은 dynamic iridescence + sheen color shifting으로 표현
 const capsuleGeo = new THREE.CapsuleGeometry(0.95, 1.4, 32, 64);
 const capsuleMat = new THREE.MeshPhysicalMaterial({
   color: 0xd4c5ff,
-  metalness: 0.15,
-  roughness: 0.05,
-  emissive: 0x4a2d8a,
-  emissiveIntensity: 0.15,
-  transmission: 0.55, // 안 비치게 적당히
-  thickness: 1.2,
-  ior: 1.5,
+  metalness: 0.0,
+  roughness: 0.08,
+  emissive: 0x6b3aae,
+  emissiveIntensity: 0.18,
   iridescence: 1.0,
-  iridescenceIOR: 1.6,
-  iridescenceThicknessRange: [200, 1400],
+  iridescenceIOR: 1.7,
+  iridescenceThicknessRange: [300, 1100],
   clearcoat: 1.0,
   clearcoatRoughness: 0.02,
   sheen: 1.0,
-  sheenRoughness: 0.2,
-  sheenColor: new THREE.Color(0xffd66b),
-  transparent: true,
-  opacity: 0.92,
-  envMapIntensity: 1.8,
+  sheenRoughness: 0.25,
+  sheenColor: new THREE.Color(0xffd6b0),
+  envMapIntensity: 1.6,
 });
 const capsule = new THREE.Mesh(capsuleGeo, capsuleMat);
 capsuleGroup.add(capsule);
-
-// 2-b. 내부 발광 코어 — 작고 강렬한 빛의 결정
-const coreGeo = new THREE.IcosahedronGeometry(0.42, 1);
-const coreMat = new THREE.MeshStandardMaterial({
-  color: 0xffd6f5,
-  emissive: 0xff9af5,
-  emissiveIntensity: 1.8,
-  metalness: 0.0,
-  roughness: 0.0,
-});
-const core = new THREE.Mesh(coreGeo, coreMat);
-capsuleGroup.add(core);
-
-// 2-c. 코어 주변 글로우 (additive 구체)
-const coreGlowGeo = new THREE.SphereGeometry(0.65, 32, 32);
-const coreGlowMat = new THREE.MeshBasicMaterial({
-  color: 0xff9af5,
-  transparent: true,
-  opacity: 0.5,
-  blending: THREE.AdditiveBlending,
-  depthWrite: false,
-});
-const coreGlow = new THREE.Mesh(coreGlowGeo, coreGlowMat);
-capsuleGroup.add(coreGlow);
-
-// 2-d. 캡슐 표면 디테일 — 위/아래 메탈 캡 + 적도 라인
-const capTopGeo = new THREE.TorusGeometry(0.95, 0.05, 16, 64);
-const capMetalMat = new THREE.MeshStandardMaterial({
-  color: 0xffd66b,
-  metalness: 1.0,
-  roughness: 0.15,
-  emissive: 0x8a5a00,
-  emissiveIntensity: 0.4,
-});
-const equatorRing = new THREE.Mesh(capTopGeo, capMetalMat);
-equatorRing.rotation.x = Math.PI / 2;
-capsuleGroup.add(equatorRing);
-
-// 2-e. 떠다니는 룬(rune) 링 — 캡슐 주위 천천히 도는 자기장 같은 라인
-const runeGeo = new THREE.TorusGeometry(1.35, 0.012, 8, 96);
-const runeMat = new THREE.MeshBasicMaterial({
-  color: 0xe879f9,
-  transparent: true,
-  opacity: 0.55,
-  blending: THREE.AdditiveBlending,
-  depthWrite: false,
-});
-const runeRing1 = new THREE.Mesh(runeGeo, runeMat);
-const runeRing2 = new THREE.Mesh(runeGeo, runeMat.clone());
-(runeRing2.material as THREE.MeshBasicMaterial).color.setHex(0xffd66b);
-runeRing1.rotation.x = Math.PI / 3;
-runeRing2.rotation.x = -Math.PI / 4;
-runeRing2.rotation.y = Math.PI / 3;
-capsuleGroup.add(runeRing1);
-capsuleGroup.add(runeRing2);
-
-// 폭발 시 그룹 단위로 visible 토글하기 위해 capsule 변수 참조 유지
 
 // ---------- 2-b. 영롱 오라(할로) ----------
 const haloGeo = new THREE.SphereGeometry(1.6, 32, 32);
@@ -382,38 +321,25 @@ function tick() {
       capsuleGroup.position.x = 0;
       capsuleGroup.position.y = 0;
     }
-    capsuleMat.emissiveIntensity = 0.15 + pressure * 2.2;
-    // 이리데센스 두께 압력 시프트
-    capsuleMat.iridescenceThicknessRange = [200 + pressure * 200, 1400 + pressure * 600];
+    // 우주·유니콘 이리데센스: 시간+압력에 따라 두께 시프트하며 표면 색이 흐름
+    const t1 = 200 + Math.sin(t * 1.1) * 250 + pressure * 600;
+    const t2 = 1200 + Math.cos(t * 0.8) * 350 + pressure * 800;
+    capsuleMat.iridescenceThicknessRange = [t1, t2];
+    capsuleMat.emissiveIntensity = 0.18 + pressure * 2.4;
+
+    // sheen 컬러를 유니콘 팔레트로 순환 (라벤더 → 마젠타 → 골드 → 민트 → 라벤더…)
+    const hueShift = 0.78 + Math.sin(t * 0.6 + pressure * 2) * 0.25;
+    capsuleMat.sheenColor.setHSL(hueShift, 0.6 + pressure * 0.3, 0.7);
+    capsuleMat.color.setHSL(0.72 + Math.sin(t * 0.4) * 0.15, 0.35 + pressure * 0.25, 0.78);
+
     corePulse.intensity = pressure * 4.0 + Math.sin(t * 3) * 0.2 * pressure;
 
-    // 내부 코어: 자체 회전 + 압력 시 펄스
-    const corePulseScale = 1 + Math.sin(t * 3) * 0.05 + pressure * 0.4;
-    core.scale.setScalar(corePulseScale);
-    core.rotation.x = t * 0.7;
-    core.rotation.y = t * 1.1;
-    coreMat.emissiveIntensity = 1.8 + pressure * 3.5 + Math.sin(t * 4) * 0.3;
-    // 코어 글로우: 압력 시 밝아짐
-    coreGlow.scale.setScalar(1 + pressure * 0.6 + Math.sin(t * 2.5) * 0.05);
-    coreGlowMat.opacity = 0.4 + pressure * 0.5;
-    coreGlowMat.color.setHSL(0.85 - pressure * 0.1, 0.85, 0.7);
-
-    // 룬 링 회전 (압력 시 가속)
-    const runeSpeed = 0.2 + pressure * 1.5;
-    runeRing1.rotation.z = t * runeSpeed;
-    runeRing2.rotation.z = -t * runeSpeed * 0.7;
-    (runeRing1.material as THREE.MeshBasicMaterial).opacity = 0.55 + pressure * 0.4;
-    (runeRing2.material as THREE.MeshBasicMaterial).opacity = 0.55 + pressure * 0.4;
-
-    // 적도 링: 압력 시 발광 강화
-    capMetalMat.emissiveIntensity = 0.4 + pressure * 1.6;
-
-    // 할로: 압력 시 발광 확장
+    // 할로: 압력 시 발광 확장 (캡슐 자체의 아우라처럼)
     halo.scale.setScalar(1 + pressure * 0.25 + Math.sin(t * 2) * 0.02);
-    haloMat.opacity = 0.08 + pressure * 0.35;
+    haloMat.opacity = 0.06 + pressure * 0.4;
     haloMat.color.setHSL(0.78 + pressure * 0.12, 0.7, 0.6 + pressure * 0.2);
 
-    // 글리머 입자: 압력 시 발광 + 회전 가속
+    // 글리머 입자: 압력 시 발광 + 회전 가속 (별먼지 같은 분위기)
     const swirlSpeed = 0.15 + pressure * 1.2;
     for (let i = 0; i < glimmers.length; i++) {
       const g = glimmers[i];
@@ -422,7 +348,7 @@ function tick() {
       const tilt = g.userData.tilt as number;
       g.position.set(Math.cos(ang) * r, Math.sin(ang) * r + tilt, Math.sin(ang * 2) * 0.6);
       const m = g.material as THREE.MeshBasicMaterial;
-      m.opacity = 0.15 + pressure * 0.85 + Math.sin(t * 5 + i) * 0.1 * pressure;
+      m.opacity = 0.1 + pressure * 0.7 + Math.sin(t * 5 + i) * 0.08 * pressure;
       m.color.setHSL(0.13 + pressure * 0.05 + (i % 2) * 0.6, 0.8, 0.7);
     }
     rumble(pressure);
