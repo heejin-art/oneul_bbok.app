@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+    <meta name="theme-color" content="#0A0518" />
+    <title>스트레스 캡슐 · Stress Capsule</title>
+    <link rel="stylesheet" href="/src/style.css" />
+  </head>
+  <body data-theme="capsule">
+    <main id="app">
+      <canvas id="scene"></canvas>
+      <header class="hud">
+        <div class="hud__brand">스트레스 캡슐</div>
+        <div class="hud__daily">
+          <span class="hud__daily-label">오늘 남은 캡슐</span>
+          <span id="daily" class="hud__daily-value">5</span>
+        </div>
+      </header>
+      <section class="hint" id="hint">
+        <p>중앙 캡슐을 <strong>꾹</strong> 눌러보세요</p>
+      </section>
+      <section class="message" id="message" hidden>
+        <p class="message__text" id="messageText"></p>
+        <button class="message__close" id="messageClose">다음</button>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
