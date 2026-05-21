@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 
 // ---------- 1. 씬 셋업 ----------
 const canvas = document.getElementById("scene") as HTMLCanvasElement;
@@ -9,20 +10,29 @@ const hero = document.getElementById("hero")!;
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.1;
 
 const scene = new THREE.Scene();
+
+// 환경맵 — iridescence·transmission 굴절을 위한 필수 reflection
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.set(0, 0, 12);
 
-// 조명: 부드러운 환경 + 키 라이트
-scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-const keyLight = new THREE.DirectionalLight(0xffffff, 1.0);
+// 조명: 신비로운 듀얼 림
+scene.add(new THREE.AmbientLight(0xa8c0ff, 0.35));
+const keyLight = new THREE.DirectionalLight(0xe0d4ff, 0.9);
 keyLight.position.set(5, 8, 5);
 scene.add(keyLight);
-const rimLight = new THREE.DirectionalLight(0xffb7d5, 0.8);
+const rimLight = new THREE.DirectionalLight(0x8ad5e8, 1.1);
 rimLight.position.set(-5, -3, -5);
 scene.add(rimLight);
+const auraLight = new THREE.PointLight(0xc6a8ff, 1.4, 30);
+auraLight.position.set(0, 0, 6);
+scene.add(auraLight);
 
 // ---------- 2. 버블 그리드 ----------
 type Bubble = {
@@ -40,21 +50,31 @@ const GAP = 1.45;
 
 const bubbleGeo = new THREE.SphereGeometry(0.55, 32, 32);
 
-function makeBubbleMaterial(hue: number): THREE.MeshPhysicalMaterial {
-  const color = new THREE.Color().setHSL(hue, 0.6, 0.75);
+// 신비로운 팔레트: 청록·라벤더·페리윙클·오팔 (HSL 200°~310° + 채도 절제 + 명도 ↑)
+function makeBubbleMaterial(seed: number): THREE.MeshPhysicalMaterial {
+  // hue: 0.55 (청록) → 0.85 (라벤더/모브) 사이를 부드럽게 순회
+  const hue = 0.55 + (Math.sin(seed * Math.PI * 2) * 0.5 + 0.5) * 0.3;
+  const sat = 0.28 + Math.cos(seed * 5.7) * 0.08; // 저채도
+  const lit = 0.82 + Math.sin(seed * 3.1) * 0.05; // 고명도
+  const color = new THREE.Color().setHSL(hue, sat, lit);
   return new THREE.MeshPhysicalMaterial({
     color,
     metalness: 0,
-    roughness: 0.05,
-    transmission: 0.9,
-    thickness: 0.6,
-    ior: 1.4,
+    roughness: 0.02,
+    transmission: 0.96,
+    thickness: 0.9,
+    ior: 1.45,
     iridescence: 1.0,
-    iridescenceIOR: 1.3,
+    iridescenceIOR: 1.6,
+    iridescenceThicknessRange: [120, 880],
     clearcoat: 1.0,
-    clearcoatRoughness: 0.05,
+    clearcoatRoughness: 0.02,
+    sheen: 1.0,
+    sheenRoughness: 0.3,
+    sheenColor: new THREE.Color().setHSL((hue + 0.1) % 1, 0.5, 0.7),
     transparent: true,
-    opacity: 0.85,
+    opacity: 0.78,
+    envMapIntensity: 1.6,
   });
 }
 
@@ -66,8 +86,8 @@ function buildGrid() {
   const offsetY = -((ROWS - 1) * GAP) / 2;
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
-      const hue = ((c + r * 0.5) / COLS) % 1;
-      const mat = makeBubbleMaterial(hue);
+      const seed = (c * 0.317 + r * 0.811) % 1;
+      const mat = makeBubbleMaterial(seed);
       const mesh = new THREE.Mesh(bubbleGeo, mat);
       const x = offsetX + c * GAP + (r % 2 === 0 ? 0 : GAP * 0.5);
       const y = offsetY + r * GAP;
@@ -77,7 +97,7 @@ function buildGrid() {
         mesh,
         popped: false,
         basePos: mesh.position.clone(),
-        hue,
+        hue: seed,
         floatPhase: Math.random() * Math.PI * 2,
       });
     }
@@ -90,10 +110,12 @@ type Shard = { mesh: THREE.Mesh; velocity: THREE.Vector3; life: number };
 const shards: Shard[] = [];
 const shardGeo = new THREE.SphereGeometry(0.08, 8, 8);
 
-function spawnShards(pos: THREE.Vector3, hue: number) {
-  for (let i = 0; i < 8; i++) {
+function spawnShards(pos: THREE.Vector3, seed: number) {
+  const baseHue = 0.55 + (Math.sin(seed * Math.PI * 2) * 0.5 + 0.5) * 0.3;
+  for (let i = 0; i < 10; i++) {
+    const h = (baseHue + (Math.random() - 0.5) * 0.1) % 1;
     const mat = new THREE.MeshBasicMaterial({
-      color: new THREE.Color().setHSL(hue, 0.7, 0.7),
+      color: new THREE.Color().setHSL(h, 0.5, 0.85),
       transparent: true,
     });
     const m = new THREE.Mesh(shardGeo, mat);

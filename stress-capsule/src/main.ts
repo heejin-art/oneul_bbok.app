@@ -1,8 +1,16 @@
 import * as THREE from "three";
+import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
 import { pickMessage } from "./messages";
 
 // ---------- 0. 일일 카운트 (LocalStorage) ----------
-const DAILY_LIMIT = 5;
+// 데모/터널 환경에서는 무제한, 운영 도메인에서만 일일 5개 제한
+const IS_DEMO =
+  location.hostname === "localhost" ||
+  location.hostname === "127.0.0.1" ||
+  location.hostname.endsWith(".loca.lt") ||
+  location.hostname.endsWith(".trycloudflare.com") ||
+  new URLSearchParams(location.search).has("dev");
+const DAILY_LIMIT = IS_DEMO ? Infinity : 5;
 const TODAY_KEY = "sc.today";
 const COUNT_KEY = "sc.count";
 
@@ -32,6 +40,10 @@ const messageText = document.getElementById("messageText")!;
 const messageClose = document.getElementById("messageClose")!;
 
 function refreshDaily() {
+  if (!isFinite(DAILY_LIMIT)) {
+    dailyEl.textContent = "∞";
+    return;
+  }
   const remaining = Math.max(0, DAILY_LIMIT - readCount());
   dailyEl.textContent = String(remaining);
 }
@@ -40,36 +52,90 @@ refreshDaily();
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
 
 const scene = new THREE.Scene();
+
+// 환경맵: 이리데센스가 살아나려면 reflection이 필수
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.05).texture;
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.set(0, 0, 7);
 
-// 다크 스튜디오 라이팅 + 골드 림
-scene.add(new THREE.AmbientLight(0x4030a0, 0.4));
-const key = new THREE.DirectionalLight(0xffffff, 1.2);
+// 다크 스튜디오 라이팅 + 듀얼 림 (골드/마젠타)
+scene.add(new THREE.AmbientLight(0x4030a0, 0.35));
+const key = new THREE.DirectionalLight(0xffffff, 1.1);
 key.position.set(3, 5, 4);
 scene.add(key);
-const rim = new THREE.DirectionalLight(0xffd66b, 1.6);
+const rim = new THREE.DirectionalLight(0xffd66b, 1.5);
 rim.position.set(-4, -2, -3);
 scene.add(rim);
-const fill = new THREE.PointLight(0xe879f9, 1.5, 12);
+const fill = new THREE.PointLight(0xe879f9, 1.4, 12);
 fill.position.set(0, 0, 3);
 scene.add(fill);
+// 캡슐 뒤편 발광 (압력 빌드업 시 강해짐)
+const corePulse = new THREE.PointLight(0xffd6f5, 0, 8);
+corePulse.position.set(0, 0, -0.5);
+scene.add(corePulse);
 
-// ---------- 2. 캡슐 ----------
-const capsuleGeo = new THREE.CapsuleGeometry(0.9, 1.4, 16, 32);
-const capsuleMat = new THREE.MeshStandardMaterial({
-  color: 0xb8a4e8,
-  metalness: 0.65,
-  roughness: 0.25,
-  emissive: 0x4b2a8a,
-  emissiveIntensity: 0.15,
+// ---------- 2. 캡슐 (이리데센트 영롱) ----------
+const capsuleGeo = new THREE.CapsuleGeometry(0.9, 1.4, 32, 64);
+const capsuleMat = new THREE.MeshPhysicalMaterial({
+  color: 0xc4b0ff,
+  metalness: 0.35,
+  roughness: 0.12,
+  emissive: 0x6b3aae,
+  emissiveIntensity: 0.25,
+  iridescence: 1.0,
+  iridescenceIOR: 1.6,
+  iridescenceThicknessRange: [200, 1200],
+  clearcoat: 1.0,
+  clearcoatRoughness: 0.04,
+  sheen: 1.0,
+  sheenRoughness: 0.25,
+  sheenColor: new THREE.Color(0xffd66b),
+  envMapIntensity: 1.6,
 });
 const capsule = new THREE.Mesh(capsuleGeo, capsuleMat);
 capsule.rotation.z = Math.PI / 8;
 scene.add(capsule);
+
+// ---------- 2-b. 영롱 오라(할로) ----------
+const haloGeo = new THREE.SphereGeometry(1.6, 32, 32);
+const haloMat = new THREE.MeshBasicMaterial({
+  color: 0xe879f9,
+  transparent: true,
+  opacity: 0,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+  side: THREE.BackSide,
+});
+const halo = new THREE.Mesh(haloGeo, haloMat);
+scene.add(halo);
+
+// 외곽 글리머 입자 (압력 시 회전·발광)
+const glimmerCount = 24;
+const glimmerGeo = new THREE.IcosahedronGeometry(0.04, 0);
+const glimmerMat = new THREE.MeshBasicMaterial({
+  color: 0xffd66b,
+  transparent: true,
+  opacity: 0,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+});
+const glimmers: THREE.Mesh[] = [];
+for (let i = 0; i < glimmerCount; i++) {
+  const m = new THREE.Mesh(glimmerGeo, glimmerMat.clone());
+  const a = (i / glimmerCount) * Math.PI * 2;
+  const r = 2.2 + Math.random() * 0.4;
+  m.userData.angle = a;
+  m.userData.radius = r;
+  m.userData.tilt = (Math.random() - 0.5) * 0.6;
+  scene.add(m);
+  glimmers.push(m);
+}
 
 // ---------- 3. 파편 풀 ----------
 type Shard = { mesh: THREE.Mesh; velocity: THREE.Vector3; life: number; spin: THREE.Vector3 };
@@ -240,7 +306,7 @@ function tick() {
     const breath = Math.sin(t * 1.5) * 0.02;
     const swell = 1 + pressure * 0.6 + breath;
     capsule.scale.setScalar(swell);
-    capsule.rotation.y = Math.sin(t * 0.4) * 0.3;
+    capsule.rotation.y = Math.sin(t * 0.4) * 0.3 + pressure * t * 0.6;
     // 압력 진동
     if (pressure > 0.3) {
       const jitter = pressure * 0.05;
@@ -250,8 +316,32 @@ function tick() {
       capsule.position.x = 0;
       capsule.position.y = 0;
     }
-    capsuleMat.emissiveIntensity = 0.15 + pressure * 1.2;
+    capsuleMat.emissiveIntensity = 0.25 + pressure * 2.4;
+    // 이리데센스 두께를 압력으로 시프트 → 색조가 변하는 영롱감
+    capsuleMat.iridescenceThicknessRange = [200 + pressure * 200, 1200 + pressure * 600];
+    corePulse.intensity = pressure * 4.0 + Math.sin(t * 3) * 0.2 * pressure;
+
+    // 할로: 압력 시 발광 확장
+    halo.scale.setScalar(1 + pressure * 0.25 + Math.sin(t * 2) * 0.02);
+    haloMat.opacity = 0.08 + pressure * 0.35;
+    haloMat.color.setHSL(0.78 + pressure * 0.12, 0.7, 0.6 + pressure * 0.2);
+
+    // 글리머 입자: 압력 시 발광 + 회전 가속
+    const swirlSpeed = 0.15 + pressure * 1.2;
+    for (let i = 0; i < glimmers.length; i++) {
+      const g = glimmers[i];
+      const ang = (g.userData.angle as number) + t * swirlSpeed;
+      const r = (g.userData.radius as number) * (1 + pressure * 0.1);
+      const tilt = g.userData.tilt as number;
+      g.position.set(Math.cos(ang) * r, Math.sin(ang) * r + tilt, Math.sin(ang * 2) * 0.6);
+      const m = g.material as THREE.MeshBasicMaterial;
+      m.opacity = 0.15 + pressure * 0.85 + Math.sin(t * 5 + i) * 0.1 * pressure;
+      m.color.setHSL(0.13 + pressure * 0.05 + (i % 2) * 0.6, 0.8, 0.7);
+    }
     rumble(pressure);
+  } else {
+    haloMat.opacity = 0;
+    for (const g of glimmers) (g.material as THREE.MeshBasicMaterial).opacity = 0;
   }
 
   // 파편 업데이트
