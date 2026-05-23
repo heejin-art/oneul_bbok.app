@@ -6,11 +6,11 @@
     <meta name="theme-color" content="#7AE5E5" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-    <meta name="apple-mobile-web-app-title" content="버블팝랩" />
-    <meta name="description" content="무한 뽁뽁이 + 1분 챌린지 + 오늘의 패턴. 손가락만 움직이세요." />
+    <meta name="apple-mobile-web-app-title" content="오늘뽁" />
+    <meta name="description" content="오늘의 스트레스, 뽁뽁 터뜨려서 날려버리세요. 무한 뽁뽁이 피젯 게임." />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <link rel="stylesheet" href="/src/style.css" />
-    <title>버블팝랩 · BubblePopLab</title>
+    <title>오늘뽁 · Todapop</title>
   </head>
   <body data-theme="bubble">
     <main id="app">
@@ -18,50 +18,64 @@
 
       <header class="hud">
         <div class="hud__left">
-          <div class="hud__brand">버블팝랩</div>
-          <div id="stageBlock" class="hud__stage">
-            <span class="hud__stage-label">STAGE</span>
-            <span id="stage" class="hud__stage-value">1</span>
-          </div>
-          <div id="timerBlock" class="hud__timer" hidden>
-            <span class="hud__timer-label">TIME</span>
-            <span id="timer" class="hud__timer-value">1:00</span>
-          </div>
+          <div class="hud__brand">오늘뽁</div>
         </div>
-        <div class="hud__score">
-          <span class="hud__score-label">POP</span>
-          <span id="score" class="hud__score-value">0</span>
+        <div class="hud__counters">
+          <div class="hud__counter">
+            <span class="hud__counter-label">오늘</span>
+            <span id="todayCount" class="hud__counter-value">0</span>
+            <span class="hud__counter-unit">개</span>
+          </div>
+          <div class="hud__counter hud__counter--sub">
+            <span class="hud__counter-label">누적</span>
+            <span id="totalCount" class="hud__counter-value">0</span>
+            <span class="hud__counter-unit">개</span>
+          </div>
         </div>
       </header>
 
+      <!-- 몰입 모드 HUD (시간 + 그만하기) -->
+      <div id="immersionHud" class="immersion-hud" hidden>
+        <div class="immersion-hud__time">
+          <span id="immersionTimer" class="immersion-hud__timer">1:00</span>
+          <span id="immersionBonus" class="immersion-hud__bonus" data-show="false">+5</span>
+        </div>
+        <button id="btnStop" class="immersion-hud__stop">그만하기</button>
+      </div>
+
+      <!-- 콤보 (시각 효과만) -->
       <div id="combo" class="combo" data-show="false">
         <span class="combo__x">×</span>
         <span id="comboValue" class="combo__value">2</span>
         <span class="combo__label">COMBO</span>
       </div>
 
-      <div id="stageToast" class="stage-toast" data-show="false">
-        <span class="stage-toast__small">STAGE</span>
-        <span id="stageToastNum" class="stage-toast__num">1</span>
-        <span class="stage-toast__big">CLEAR!</span>
+      <!-- 칭찬 토스트 -->
+      <div id="praiseToast" class="praise-toast" data-show="false">
+        <span id="praiseText" class="praise-toast__text"></span>
+      </div>
+
+      <!-- 클리어 토스트 -->
+      <div id="clearToast" class="clear-toast" data-show="false">
+        <span id="clearText" class="clear-toast__text"></span>
       </div>
 
       <!-- 랜딩 히어로 -->
       <section class="hero" id="hero">
         <div class="hero__brand">WOOHEEJIN</div>
-        <h1 class="hero__title">버블팝랩</h1>
-        <p class="hero__subtitle">머리 비우고, 손가락만 움직이세요</p>
+        <h1 class="hero__title">오늘뽁</h1>
+        <p class="hero__subtitle">오늘의 스트레스, 뽁뽁 터뜨려서 날려버리세요</p>
 
         <div class="hero__modes">
           <button id="btnMeditation" class="mode-card mode-card--meditation">
             <span class="mode-card__icon">∞</span>
             <span class="mode-card__name">명상 모드</span>
-            <span class="mode-card__desc">무한, 타이머 없음</span>
+            <span class="mode-card__desc">끝없이, 편안하게</span>
           </button>
-          <button id="btnChallenge" class="mode-card mode-card--challenge">
-            <span class="mode-card__icon">⏱</span>
-            <span class="mode-card__name">1분 챌린지</span>
-            <span class="mode-card__desc">베스트 기록에 도전</span>
+          <button id="btnImmersion" class="mode-card mode-card--immersion">
+            <span class="mode-card__icon">☯</span>
+            <span class="mode-card__name">몰입 모드</span>
+            <span class="mode-card__desc">진하게, 시원하게</span>
           </button>
           <button id="btnDaily" class="mode-card mode-card--daily">
             <span class="mode-card__icon">★</span>
@@ -80,13 +94,14 @@
       <!-- 결과 모달 -->
       <section class="result" id="result" hidden data-show="false">
         <div class="result__card">
-          <div id="resultNewBadge" class="result__new-badge" data-show="false">NEW BEST!</div>
-          <h2 class="result__title" id="resultTitle">챌린지 종료</h2>
-          <div class="result__score" id="resultScore">0</div>
-          <div class="result__best" id="resultBest">나의 베스트 0</div>
+          <h2 class="result__title" id="resultTitle">시원하게 한 판!</h2>
+          <div class="result__count"><span id="resultCount">0</span><span class="result__count-unit">개</span></div>
+          <p class="result__praise" id="resultPraise">뽁뽁 터진 만큼, 스트레스도 터져 나갔어요.</p>
+          <div class="result__summary" id="resultSummary"></div>
           <div class="result__actions">
-            <button id="btnReplay" class="result__btn result__btn--primary">다시 도전</button>
+            <button id="btnReplay" class="result__btn result__btn--primary">한 번 더</button>
             <button id="btnShare" class="result__btn">공유</button>
+            <button id="btnOther" class="result__btn result__btn--ghost" id="btnOtherLabel">명상으로 쉬기</button>
             <button id="btnHome" class="result__btn result__btn--ghost">홈으로</button>
           </div>
         </div>

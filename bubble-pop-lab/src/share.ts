@@ -44,7 +44,7 @@ export async function buildShareCard(opts: ShareCardOpts): Promise<Blob> {
   ctx.fillStyle = "rgba(26,31,54,0.55)";
   ctx.font = "700 32px 'Pretendard Variable', system-ui, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("버블팝랩 · BubblePopLab", W / 2, 120);
+  ctx.fillText("오늘뽁 · Todapop", W / 2, 120);
 
   // 타이틀
   ctx.fillStyle = "#1A1F36";
@@ -88,7 +88,7 @@ export async function buildShareCard(opts: ShareCardOpts): Promise<Blob> {
   // 푸터
   ctx.fillStyle = "rgba(26,31,54,0.4)";
   ctx.font = "500 24px 'Pretendard Variable', system-ui, sans-serif";
-  ctx.fillText("Play with us · WOOHEEJIN", W / 2, H - 80);
+  ctx.fillText("오늘뽁 · 스트레스를 터뜨려요", W / 2, H - 80);
 
   return await new Promise<Blob>((resolve) =>
     canvas.toBlob((b) => resolve(b!), "image/png"),
