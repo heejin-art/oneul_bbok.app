@@ -94,6 +94,7 @@ scene.add(auraLight);
 
 // ---------- 게임 상태 ----------
 let mode: Mode = "meditation";
+let level = 1;
 let sessionCount = 0;
 let gridClears = 0;
 let gridStartTime = 0;
@@ -156,11 +157,17 @@ function makeBubbleMaterial(isRare: boolean) {
   return { mat, palette };
 }
 
+// 레벨별 버블 크기 (1=큰, 10=작은)
+function levelScale(): number {
+  return Math.max(0.4, 1.3 - (level - 1) * 0.09);
+}
+
 function buildGrid(mask: PatternMask = fullMask()) {
   for (const b of bubbles) scene.remove(b.mesh);
   bubbles.length = 0;
   const offsetX = -((COLS - 1) * GAP) / 2;
   const offsetY = -((ROWS - 1) * GAP) / 2;
+  const ls = levelScale();
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
       const i = r * COLS + c;
@@ -171,7 +178,7 @@ function buildGrid(mask: PatternMask = fullMask()) {
       const x = offsetX + c * GAP + (r % 2 === 0 ? 0 : GAP * 0.5);
       const y = offsetY + r * GAP;
       mesh.position.set(x, y, 0);
-      mesh.scale.setScalar((isRare ? 1.1 : 0.92) + Math.random() * 0.12);
+      mesh.scale.setScalar(((isRare ? 1.1 : 0.92) + Math.random() * 0.12) * ls);
       scene.add(mesh);
       bubbles.push({
         mesh, popped: false, basePos: mesh.position.clone(),
@@ -182,6 +189,34 @@ function buildGrid(mask: PatternMask = fullMask()) {
   }
   gridStartTime = performance.now();
   if (remainingHud) updateRemaining();
+}
+
+// 히어로용 데코 버블 (대중소 랜덤 배치)
+const decoBubbles: THREE.Mesh[] = [];
+function buildDecoBubbles() {
+  for (const m of decoBubbles) scene.remove(m);
+  decoBubbles.length = 0;
+  const count = 25;
+  for (let i = 0; i < count; i++) {
+    const isRare = Math.random() < 0.1;
+    const { mat } = makeBubbleMaterial(isRare);
+    const mesh = new THREE.Mesh(bubbleGeo, mat);
+    mesh.position.set(
+      (Math.random() - 0.5) * 14,
+      (Math.random() - 0.5) * 18,
+      (Math.random() - 0.5) * 2,
+    );
+    const sizes = [0.4, 0.6, 0.8, 1.0, 1.3, 1.6];
+    mesh.scale.setScalar(sizes[Math.floor(Math.random() * sizes.length)]);
+    mesh.userData.floatPhase = Math.random() * Math.PI * 2;
+    scene.add(mesh);
+    decoBubbles.push(mesh);
+  }
+}
+
+function clearDecoBubbles() {
+  for (const m of decoBubbles) scene.remove(m);
+  decoBubbles.length = 0;
 }
 
 // ---------- 3. 도파민 폭발 시스템 ----------
@@ -335,8 +370,16 @@ function tryPopAt(clientX: number, clientY: number) {
     showToast(clearToastEl, clearTextEl, clearPraise(gridTime), 1200);
 
     if (mode === "stress") {
-      setTimeout(() => endSession(), 800);
+      // 스트레스 단어 폭발 → 사라짐
+      stressLabelEl.classList.add("is-exploding");
+      setTimeout(() => {
+        stressLabelEl.setAttribute("hidden", "");
+        stressLabelEl.classList.remove("is-exploding");
+        endSession();
+      }, 700);
     } else {
+      // 레벨업 (명상·몰입 공통)
+      level = Math.min(level + 1, 10);
       if (mode === "immersion") {
         immersionRemaining += IMMERSION_BONUS_MS;
         immersionBonusEl.textContent = `+${IMMERSION_BONUS_MS / 1000}`;
@@ -370,9 +413,11 @@ function formatTime(ms: number): string {
 
 function startMode(m: Mode) {
   mode = m;
+  level = 1;
   sessionCount = 0;
   gridClears = 0;
   playing = true;
+  clearDecoBubbles();
   sessionStartTime = performance.now();
   hero.classList.add("is-hidden");
   resultEl.setAttribute("data-show", "false");
@@ -423,11 +468,11 @@ function endSession() {
   } else if (mode === "immersion") {
     title = `${formatElapsed(elapsed)} 동안 몰입!`;
     praise = pickResultPraise();
-    summary = `그리드 ${gridClears}번 클리어`;
+    summary = `레벨 ${level} · 그리드 ${gridClears}번 클리어`;
   } else {
     title = "시원하게 비웠어요";
     praise = pickResultPraise();
-    summary = `${formatElapsed(elapsed)} 동안 뽁뽁`;
+    summary = `레벨 ${level} · ${formatElapsed(elapsed)} 동안 뽁뽁`;
   }
 
   resultTitle.textContent = title;
@@ -476,7 +521,13 @@ btnStressBack.addEventListener("click", () => {
 btnReplay.addEventListener("click", () => startMode(mode));
 btnHome.addEventListener("click", () => {
   resultEl.setAttribute("data-show", "false");
-  setTimeout(() => { resultEl.setAttribute("hidden", ""); hero.classList.remove("is-hidden"); }, 300);
+  setTimeout(() => {
+    resultEl.setAttribute("hidden", "");
+    for (const b of bubbles) scene.remove(b.mesh);
+    bubbles.length = 0;
+    buildDecoBubbles();
+    hero.classList.remove("is-hidden");
+  }, 300);
 });
 btnOther.addEventListener("click", () => {
   if (mode === "meditation") {
@@ -523,18 +574,19 @@ window.addEventListener("resize", () => {
 
 // ---------- 8. 애니메이션 루프 ----------
 fitCamera();
-buildGrid(fullMask());
+buildDecoBubbles();
 
 const clock = new THREE.Clock();
 function tick() {
   const t = clock.getElapsedTime();
 
-  // 몰입 모드: 버블 움직임 더 활발하게 (명상보다 amplitude·speed 2배)
+  // 레벨 + 모드에 따른 움직임 (몰입은 레벨 올라갈수록 더 활발)
   const isImmersion = mode === "immersion" && playing;
-  const floatAmp = isImmersion ? 0.18 : 0.08;
-  const floatSpeed = isImmersion ? 2.4 : 1.2;
-  const driftAmp = isImmersion ? 0.10 : 0.04;
-  const driftSpeed = isImmersion ? 1.6 : 0.8;
+  const levelMult = isImmersion ? 1 + (level - 1) * 0.15 : 1;
+  const floatAmp = (isImmersion ? 0.14 : 0.08) * levelMult;
+  const floatSpeed = (isImmersion ? 2.0 : 1.2) * levelMult;
+  const driftAmp = (isImmersion ? 0.08 : 0.04) * levelMult;
+  const driftSpeed = (isImmersion ? 1.4 : 0.8) * levelMult;
 
   for (const b of bubbles) {
     if (b.popped) continue;
@@ -568,6 +620,14 @@ function tick() {
     immersionLastTick = now;
     immersionTimerEl.textContent = formatTime(immersionRemaining);
     if (immersionRemaining <= 0) endSession();
+  }
+
+  // 데코 버블 느긋한 플로팅
+  for (const d of decoBubbles) {
+    const p = d.userData.floatPhase as number;
+    d.position.y += Math.sin(t * 0.3 + p) * 0.002;
+    d.position.x += Math.cos(t * 0.2 + p) * 0.001;
+    d.rotation.y = t * 0.1 + p;
   }
 
   renderer.render(scene, camera);

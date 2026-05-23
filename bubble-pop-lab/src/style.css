@@ -403,6 +403,12 @@ body {
   font-size: 64px; font-weight: 900; letter-spacing: -2px;
   color: rgba(255,90,138,0.12);
   white-space: nowrap;
+  transition: transform 600ms var(--ease-soft), opacity 600ms var(--ease-soft), color 600ms var(--ease-soft);
+}
+.stress-label.is-exploding span {
+  transform: scale(2.5);
+  opacity: 0;
+  color: rgba(255,90,138,0);
 }
 .mode-card__name { font-size: 17px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; }
 .mode-card__desc { font-size: 13px; color: var(--text-muted); font-weight: 500; }
