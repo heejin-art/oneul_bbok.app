@@ -84,10 +84,10 @@
             <span class="mode-card__name">몰입 모드</span>
             <span class="mode-card__desc">집중해서, 시원하게</span>
           </button>
-          <button id="btnDaily" class="mode-card mode-card--daily">
-            <span class="mode-card__icon">★</span>
-            <span class="mode-card__name">오늘의 패턴</span>
-            <span class="mode-card__desc" id="heroPatternName">하트</span>
+          <button id="btnStress" class="mode-card mode-card--stress">
+            <span class="mode-card__icon">💥</span>
+            <span class="mode-card__name">스트레스 터뜨리기</span>
+            <span class="mode-card__desc">이름 적고, 뿌셔!</span>
           </button>
         </div>
 
@@ -95,6 +95,22 @@
           <a href="/privacy.html">개인정보처리방침</a>
         </footer>
       </section>
+
+      <!-- 스트레스 입력 모달 -->
+      <section class="stress-input" id="stressInput" hidden data-show="false">
+        <div class="stress-input__card">
+          <h2 class="stress-input__title">뭐가 스트레스인가요?</h2>
+          <p class="stress-input__sub">적고 뿌셔버리세요</p>
+          <input id="stressText" class="stress-input__field" type="text" placeholder="예: 월요일, 야근, 시험..." maxlength="6" autocomplete="off" />
+          <button id="btnStressGo" class="stress-input__btn">뿌시러 가기</button>
+          <button id="btnStressBack" class="stress-input__back">돌아가기</button>
+        </div>
+      </section>
+
+      <!-- 스트레스 이름 표시 (게임 중) -->
+      <div id="stressLabel" class="stress-label" hidden>
+        <span id="stressLabelText"></span>
+      </div>
 
       <!-- 결과 모달 -->
       <section class="result" id="result" hidden data-show="false">

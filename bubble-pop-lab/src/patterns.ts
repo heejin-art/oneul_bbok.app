@@ -115,3 +115,48 @@ export function todayPattern(): { name: string; mask: PatternMask } {
 export function todayPatternName(): string {
   return PATTERNS[todaySeed() % PATTERNS.length].name;
 }
+
+// 사용자 입력 텍스트 → 버블 마스크 (스트레스 터뜨리기 모드)
+export function textToMask(text: string): PatternMask {
+  const scale = 20;
+  const w = COLS * scale;
+  const h = ROWS * scale;
+  const canvas = document.createElement("canvas");
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext("2d")!;
+
+  const fontSize = Math.min(h * 0.6, (w / Math.max(text.length, 1)) * 1.6);
+  ctx.font = `900 ${fontSize}px "Pretendard Variable", sans-serif`;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = "white";
+  ctx.fillText(text, w / 2, h / 2);
+
+  const data = ctx.getImageData(0, 0, w, h).data;
+  const mask: PatternMask = [];
+
+  for (let r = 0; r < ROWS; r++) {
+    for (let c = 0; c < COLS; c++) {
+      const cx = Math.floor((c + 0.5) * scale);
+      const cy = Math.floor((r + 0.5) * scale);
+      let filled = 0;
+      for (let dy = -3; dy <= 3; dy++) {
+        for (let dx = -3; dx <= 3; dx++) {
+          const px = cx + dx;
+          const py = cy + dy;
+          if (px >= 0 && px < w && py >= 0 && py < h) {
+            if (data[(py * w + px) * 4 + 3] > 50) filled++;
+          }
+        }
+      }
+      mask.push(filled > 6);
+    }
+  }
+
+  // 텍스트가 너무 작아서 마스크가 거의 비었으면 전체 채움으로 폴백
+  const filledCount = mask.filter(Boolean).length;
+  if (filledCount < 8) return fullMask();
+
+  return mask;
+}

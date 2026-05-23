@@ -342,7 +342,68 @@ body {
   color: white; box-shadow: 0 4px 12px rgba(90, 111, 255, 0.3);
 }
 .mode-card--immersion .mode-card__icon { background: linear-gradient(135deg, #A78BFA, #7AE5E5); }
-.mode-card--daily .mode-card__icon { background: linear-gradient(135deg, #7AE5E5, #C4B5FD); }
+.mode-card--stress .mode-card__icon { background: linear-gradient(135deg, #FF5A8A, #FFB456); font-size: 22px; }
+
+/* 스트레스 입력 모달 */
+.stress-input {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 28; padding: 24px;
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  opacity: 0; pointer-events: none;
+  transition: opacity 320ms var(--ease-soft);
+}
+.stress-input[data-show="true"] { opacity: 1; pointer-events: auto; }
+.stress-input__card {
+  background: rgba(255,255,255,0.95); border-radius: 28px;
+  padding: 36px 28px 28px; width: min(380px, 90vw); text-align: center;
+  box-shadow: 0 24px 64px rgba(255,90,138,0.2);
+}
+.stress-input__title {
+  font-size: 22px; font-weight: 800; color: var(--text);
+  margin-bottom: 4px;
+}
+.stress-input__sub {
+  font-size: 14px; color: var(--text-muted); margin-bottom: 24px;
+}
+.stress-input__field {
+  font-family: inherit; font-size: 28px; font-weight: 800;
+  text-align: center; width: 100%; padding: 16px;
+  border: 2px solid rgba(255,90,138,0.3); border-radius: 16px;
+  background: rgba(255,255,255,0.8); color: var(--text);
+  outline: none; margin-bottom: 16px;
+  transition: border-color 200ms var(--ease-soft);
+}
+.stress-input__field:focus { border-color: #FF5A8A; }
+.stress-input__field::placeholder { color: rgba(26,31,54,0.25); font-size: 16px; font-weight: 500; }
+.stress-input__btn {
+  font-family: inherit; font-size: 16px; font-weight: 800;
+  width: 100%; padding: 16px; border: none; border-radius: 14px;
+  background: linear-gradient(135deg, #FF5A8A, #FFB456);
+  color: white; cursor: pointer;
+  box-shadow: 0 8px 20px rgba(255,90,138,0.35);
+  transition: transform 200ms var(--ease-soft);
+  margin-bottom: 12px;
+}
+.stress-input__btn:active { transform: scale(0.97); }
+.stress-input__back {
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+}
+
+/* 스트레스 라벨 (게임 중 화면 중앙 배경) */
+.stress-label {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1; pointer-events: none;
+}
+.stress-label[hidden] { display: none; }
+.stress-label span {
+  font-size: 64px; font-weight: 900; letter-spacing: -2px;
+  color: rgba(255,90,138,0.12);
+  white-space: nowrap;
+}
 .mode-card__name { font-size: 17px; font-weight: 800; color: var(--text); letter-spacing: -0.3px; }
 .mode-card__desc { font-size: 13px; color: var(--text-muted); font-weight: 500; }
 

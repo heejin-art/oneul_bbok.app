@@ -1,4 +1,4 @@
-export type Mode = "meditation" | "immersion" | "daily";
+export type Mode = "meditation" | "immersion" | "stress";
 
 const TODAY_COUNT_KEY = "bp.today.count";
 const MONTH_COUNT_KEY = "bp.month.count";
@@ -114,19 +114,16 @@ export function pickResultPraise(): string {
   return RESULT_PRAISES[Math.floor(Math.random() * RESULT_PRAISES.length)];
 }
 
-// 오늘의 패턴 완료 시 패턴별 긍정 메시지
-const DAILY_PRAISES: Record<string, string> = {
-  "하트": "사랑으로 가득 채운 하루,\n스트레스는 사라졌어요.",
-  "별": "오늘 당신은 별처럼 빛났어요.\n걱정은 다 터져 나갔어요.",
-  "ㅎ": "하하, 웃음이 나오죠?\n스트레스도 같이 웃으면서 사라졌어요.",
-  "미소": "미소를 완성한 당신,\n기분이 한결 나아졌을 거예요.",
-  "다이아": "다이아몬드처럼 단단한 당신.\n스트레스 따윈 터뜨려 버렸어요.",
-  "음표": "한 음 한 음 터뜨리면서\n마음의 소음도 사라졌어요.",
-  "스트라이프": "줄줄이 날려보낸 스트레스.\n깔끔하게 비웠어요.",
-};
-
-export function dailyPraise(patternName: string): string {
-  return DAILY_PRAISES[patternName] ?? "오늘의 패턴 완성!\n스트레스도 함께 사라졌어요.";
+// 스트레스 터뜨리기 완료 시 칭찬 카피
+export function stressPraise(stressName: string): string {
+  const options = [
+    `"${stressName}" 다 부쉈어요!\n이제 없어요, 시원하죠?`,
+    `${stressName}?\n뽁뽁 터뜨려서 날려버렸어요.`,
+    `${stressName} 따위,\n손가락으로 전부 없앴어요.`,
+    `${stressName}는 이제 가루가 됐어요.\n오늘 하루 수고했어요.`,
+    `뽁! 뽁! 뽁!\n${stressName}, 안녕~`,
+  ];
+  return options[Math.floor(Math.random() * options.length)];
 }
 
 export const IMMERSION_START_MS = 60_000;

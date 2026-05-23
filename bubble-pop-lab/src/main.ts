@@ -9,14 +9,13 @@ import {
   clearPraise,
   milestonePraise,
   pickResultPraise,
-  dailyPraise,
+  stressPraise,
   currentMonthLabel,
   IMMERSION_START_MS,
   IMMERSION_BONUS_MS,
 } from "./modes";
-import { COLS, ROWS, type PatternMask, fullMask, todayPattern, todayPatternName } from "./patterns";
+import { COLS, ROWS, type PatternMask, fullMask, textToMask } from "./patterns";
 import { buildShareCard, shareOrDownload } from "./share";
-import { startMeditationMusic, startImmersionMusic, stopAll as stopMusic } from "./music";
 
 // ---------- DOM ----------
 const canvas = document.getElementById("scene") as HTMLCanvasElement;
@@ -24,10 +23,15 @@ const todayCountEl = document.getElementById("todayCount")!;
 const monthCountEl = document.getElementById("monthCount")!;
 const monthLabelEl = document.getElementById("monthLabel")!;
 const hero = document.getElementById("hero")!;
-const heroPatternName = document.getElementById("heroPatternName")!;
 const btnMeditation = document.getElementById("btnMeditation")!;
 const btnImmersion = document.getElementById("btnImmersion")!;
-const btnDaily = document.getElementById("btnDaily")!;
+const btnStress = document.getElementById("btnStress")!;
+const stressInputEl = document.getElementById("stressInput")!;
+const stressTextField = document.getElementById("stressText") as HTMLInputElement;
+const btnStressGo = document.getElementById("btnStressGo")!;
+const btnStressBack = document.getElementById("btnStressBack")!;
+const stressLabelEl = document.getElementById("stressLabel") as HTMLElement;
+const stressLabelText = document.getElementById("stressLabelText")!;
 const comboEl = document.getElementById("combo")!;
 const comboValueEl = document.getElementById("comboValue")!;
 const praiseToastEl = document.getElementById("praiseToast")!;
@@ -101,6 +105,7 @@ let comboHideTimer: number | null = null;
 let immersionRemaining = 0;
 let immersionLastTick = 0;
 let playing = false;
+let stressName = "";
 
 // ---------- 2. 버블 그리드 ----------
 type Bubble = {
@@ -329,7 +334,7 @@ function tryPopAt(clientX: number, clientY: number) {
     const gridTime = (performance.now() - gridStartTime) / 1000;
     showToast(clearToastEl, clearTextEl, clearPraise(gridTime), 1200);
 
-    if (mode === "daily") {
+    if (mode === "stress") {
       setTimeout(() => endSession(), 800);
     } else {
       if (mode === "immersion") {
@@ -383,15 +388,16 @@ function startMode(m: Mode) {
     immersionLastTick = performance.now();
     immersionHud.removeAttribute("hidden");
     immersionTimerEl.textContent = formatTime(IMMERSION_START_MS);
-    startImmersionMusic();
+    stressLabelEl.setAttribute("hidden", "");
     buildGrid(fullMask());
-  } else if (m === "daily") {
+  } else if (m === "stress") {
     immersionHud.setAttribute("hidden", "");
-    stopMusic();
-    buildGrid(todayPattern().mask);
+    stressLabelEl.removeAttribute("hidden");
+    stressLabelText.textContent = stressName;
+    buildGrid(textToMask(stressName));
   } else {
     immersionHud.setAttribute("hidden", "");
-    startMeditationMusic();
+    stressLabelEl.setAttribute("hidden", "");
     buildGrid(fullMask());
   }
 }
@@ -402,17 +408,18 @@ function endSession() {
   hudBrand.removeAttribute("hidden");
   immersionHud.setAttribute("hidden", "");
   remainingHud.setAttribute("hidden", "");
-  stopMusic();
 
   const elapsed = performance.now() - sessionStartTime;
   let title: string;
   let praise: string;
   let summary: string;
 
-  if (mode === "daily") {
-    title = `오늘의 ${todayPatternName()} 완성!`;
-    praise = dailyPraise(todayPatternName());
-    summary = `${Math.floor(elapsed / 1000)}초 만에 클리어`;
+  stressLabelEl.setAttribute("hidden", "");
+
+  if (mode === "stress") {
+    title = `"${stressName}" 다 뿌셨어요!`;
+    praise = stressPraise(stressName);
+    summary = `${Math.floor(elapsed / 1000)}초 만에 부숨`;
   } else if (mode === "immersion") {
     title = `${formatElapsed(elapsed)} 동안 몰입!`;
     praise = pickResultPraise();
@@ -428,7 +435,7 @@ function endSession() {
   resultPraise.textContent = praise;
   resultSummary.textContent = summary;
 
-  if (mode === "meditation") btnOther.textContent = "몰입 모드 하러 가기";
+  if (mode === "meditation") btnOther.textContent = "스트레스 터뜨리기";
   else if (mode === "immersion") btnOther.textContent = "명상 모드로 쉬기";
   else btnOther.textContent = "명상 모드 해보기";
 
@@ -441,15 +448,52 @@ btnStop.addEventListener("click", () => { if (playing) endSession(); });
 
 btnMeditation.addEventListener("click", () => startMode("meditation"));
 btnImmersion.addEventListener("click", () => startMode("immersion"));
-btnDaily.addEventListener("click", () => startMode("daily"));
+
+// 스트레스 터뜨리기 — 입력 모달
+btnStress.addEventListener("click", () => {
+  hero.classList.add("is-hidden");
+  stressTextField.value = "";
+  stressInputEl.removeAttribute("hidden");
+  requestAnimationFrame(() => {
+    stressInputEl.setAttribute("data-show", "true");
+    stressTextField.focus();
+  });
+});
+btnStressGo.addEventListener("click", () => {
+  const text = stressTextField.value.trim();
+  if (!text) { stressTextField.focus(); return; }
+  stressName = text;
+  stressInputEl.setAttribute("data-show", "false");
+  setTimeout(() => { stressInputEl.setAttribute("hidden", ""); startMode("stress"); }, 300);
+});
+stressTextField.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") btnStressGo.click();
+});
+btnStressBack.addEventListener("click", () => {
+  stressInputEl.setAttribute("data-show", "false");
+  setTimeout(() => { stressInputEl.setAttribute("hidden", ""); hero.classList.remove("is-hidden"); }, 300);
+});
 btnReplay.addEventListener("click", () => startMode(mode));
 btnHome.addEventListener("click", () => {
   resultEl.setAttribute("data-show", "false");
   setTimeout(() => { resultEl.setAttribute("hidden", ""); hero.classList.remove("is-hidden"); }, 300);
 });
 btnOther.addEventListener("click", () => {
-  if (mode === "meditation") startMode("immersion");
-  else startMode("meditation");
+  if (mode === "meditation") {
+    // 스트레스 입력 모달 열기
+    resultEl.setAttribute("data-show", "false");
+    setTimeout(() => {
+      resultEl.setAttribute("hidden", "");
+      stressTextField.value = "";
+      stressInputEl.removeAttribute("hidden");
+      requestAnimationFrame(() => {
+        stressInputEl.setAttribute("data-show", "true");
+        stressTextField.focus();
+      });
+    }, 300);
+  } else {
+    startMode("meditation");
+  }
 });
 btnShare.addEventListener("click", async () => {
   try {
@@ -457,18 +501,16 @@ btnShare.addEventListener("click", async () => {
       title: "오늘뽁",
       score: sessionCount,
       subtitle: resultPraise.textContent ?? "",
-      patternName: mode === "daily" ? todayPatternName() : undefined,
+      patternName: mode === "stress" ? stressName : undefined,
     });
     await shareOrDownload(blob, "todapop.png", "오늘뽁", `${sessionCount}개의 스트레스를 터뜨렸어요!`);
   } catch (err) { console.error("share failed", err); }
 });
 
 // 초기 표시
-heroPatternName.textContent = todayPatternName();
 monthLabelEl.textContent = currentMonthLabel();
 refreshCounters();
 
-// 월간 안내
 monthInfoText.textContent = `${currentMonthLabel()} 기록은 매달 1일에 새로 시작돼요`;
 
 // ---------- 7. 리사이즈 ----------
