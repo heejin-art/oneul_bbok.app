@@ -76,7 +76,6 @@ function fitCamera() {
   const zForW = (gridW / 2 + 1.5) / Math.tan(hFov / 2);
   camera.position.z = Math.max(zForH, zForW);
 }
-fitCamera();
 
 scene.add(new THREE.AmbientLight(0xa8c0ff, 0.35));
 const keyLight = new THREE.DirectionalLight(0xe0d4ff, 0.9);
@@ -481,6 +480,7 @@ window.addEventListener("resize", () => {
 });
 
 // ---------- 8. 애니메이션 루프 ----------
+fitCamera();
 buildGrid(fullMask());
 
 const clock = new THREE.Clock();
