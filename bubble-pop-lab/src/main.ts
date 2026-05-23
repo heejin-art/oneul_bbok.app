@@ -1,17 +1,51 @@
 import * as THREE from "three";
 import { RoomEnvironment } from "three/examples/jsm/environments/RoomEnvironment.js";
+import {
+  type Mode,
+  ChallengeTimer,
+  CHALLENGE_DURATION_MS,
+  getBest,
+  saveBest,
+  getDailyBest,
+  saveDailyBest,
+} from "./modes";
+import {
+  COLS,
+  ROWS,
+  type PatternMask,
+  fullMask,
+  todayPattern,
+  todayPatternName,
+  todaySeed,
+} from "./patterns";
+import { buildShareCard, shareOrDownload } from "./share";
 
-// ---------- 1. 씬 셋업 ----------
+// ---------- DOM ----------
 const canvas = document.getElementById("scene") as HTMLCanvasElement;
 const scoreEl = document.getElementById("score")!;
 const stageEl = document.getElementById("stage")!;
-const startBtn = document.getElementById("startBtn")!;
+const stageBlockEl = document.getElementById("stageBlock")!;
+const timerEl = document.getElementById("timer")!;
+const timerBlockEl = document.getElementById("timerBlock") as HTMLElement;
 const hero = document.getElementById("hero")!;
+const heroPatternName = document.getElementById("heroPatternName")!;
+const btnMeditation = document.getElementById("btnMeditation")!;
+const btnChallenge = document.getElementById("btnChallenge")!;
+const btnDaily = document.getElementById("btnDaily")!;
 const comboEl = document.getElementById("combo")!;
 const comboValueEl = document.getElementById("comboValue")!;
 const stageToastEl = document.getElementById("stageToast")!;
 const stageToastNumEl = document.getElementById("stageToastNum")!;
+const resultEl = document.getElementById("result")!;
+const resultTitle = document.getElementById("resultTitle")!;
+const resultScore = document.getElementById("resultScore")!;
+const resultBest = document.getElementById("resultBest")!;
+const resultNewBadge = document.getElementById("resultNewBadge")!;
+const btnReplay = document.getElementById("btnReplay")!;
+const btnShare = document.getElementById("btnShare")!;
+const btnHome = document.getElementById("btnHome")!;
 
+// ---------- 1. 씬 셋업 ----------
 const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -20,14 +54,12 @@ renderer.toneMappingExposure = 1.1;
 
 const scene = new THREE.Scene();
 
-// 환경맵 — iridescence·transmission 굴절을 위한 필수 reflection
 const pmrem = new THREE.PMREMGenerator(renderer);
 scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
 const camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 100);
 camera.position.set(0, 0, 12);
 
-// 조명: 신비로운 듀얼 림
 scene.add(new THREE.AmbientLight(0xa8c0ff, 0.35));
 const keyLight = new THREE.DirectionalLight(0xe0d4ff, 0.9);
 keyLight.position.set(5, 8, 5);
@@ -40,12 +72,15 @@ auraLight.position.set(0, 0, 6);
 scene.add(auraLight);
 
 // ---------- 게임 상태 ----------
+let mode: Mode = "meditation";
 let stage = 1;
 let score = 0;
 let comboCount = 0;
 let lastPopTime = 0;
-const COMBO_WINDOW = 600; // ms
+const COMBO_WINDOW = 600;
 let comboHideTimer: number | null = null;
+let challengeTimer: ChallengeTimer | null = null;
+let dailyDone = false;
 
 // ---------- 2. 버블 그리드 ----------
 type Bubble = {
@@ -59,32 +94,26 @@ type Bubble = {
 };
 
 const bubbles: Bubble[] = [];
-const COLS = 6;
-const ROWS = 9;
 const GAP = 1.45;
-
 const bubbleGeo = new THREE.SphereGeometry(0.55, 32, 32);
 
-// 신비·오묘 큐레이션 팔레트 — 각 버블이 이 중 랜덤으로 골라 진한 색 그대로 발산
 const MYSTIC_PALETTE = [
-  { color: 0x7DD3FC, emissive: 0x1E3A8A, name: "sky-saphir" },     // 사파이어 하늘
-  { color: 0xC084FC, emissive: 0x4C1D95, name: "amethyst" },       // 자수정
-  { color: 0xF472B6, emissive: 0x9D174D, name: "rose-quartz" },    // 로즈쿼츠
-  { color: 0x6EE7B7, emissive: 0x065F46, name: "jade" },           // 옥
-  { color: 0xFCD34D, emissive: 0xB45309, name: "honey" },          // 황금꿀
-  { color: 0xA78BFA, emissive: 0x5B21B6, name: "lavender-dusk" },  // 라벤더 황혼
-  { color: 0xFB7185, emissive: 0xBE123C, name: "coral-flame" },    // 코랄
-  { color: 0x67E8F9, emissive: 0x0E7490, name: "aqua-aurora" },    // 아쿠아 오로라
-  { color: 0xFDA4AF, emissive: 0xBE185D, name: "peach-sunset" },   // 노을 복숭아
-  { color: 0xC4B5FD, emissive: 0x4338CA, name: "iris" },           // 아이리스
-  { color: 0x86EFAC, emissive: 0x166534, name: "mint-aurora" },    // 민트 오로라
-  { color: 0xFBBF24, emissive: 0x92400E, name: "topaz" },          // 황옥
+  { color: 0x7DD3FC, emissive: 0x1E3A8A },
+  { color: 0xC084FC, emissive: 0x4C1D95 },
+  { color: 0xF472B6, emissive: 0x9D174D },
+  { color: 0x6EE7B7, emissive: 0x065F46 },
+  { color: 0xFCD34D, emissive: 0xB45309 },
+  { color: 0xA78BFA, emissive: 0x5B21B6 },
+  { color: 0xFB7185, emissive: 0xBE123C },
+  { color: 0x67E8F9, emissive: 0x0E7490 },
+  { color: 0xFDA4AF, emissive: 0xBE185D },
+  { color: 0xC4B5FD, emissive: 0x4338CA },
+  { color: 0x86EFAC, emissive: 0x166534 },
+  { color: 0xFBBF24, emissive: 0x92400E },
 ];
+const RARE_PALETTE = { color: 0xFFE066, emissive: 0xC97B00 };
 
-// 황금 레어 버블 — 특별한 폭발 + 점수 5배
-const RARE_PALETTE = { color: 0xFFE066, emissive: 0xC97B00, name: "rare-gold" };
-
-function makeBubbleMaterial(isRare: boolean): { mat: THREE.MeshPhysicalMaterial; palette: { color: number; emissive: number } } {
+function makeBubbleMaterial(isRare: boolean) {
   const palette = isRare
     ? RARE_PALETTE
     : MYSTIC_PALETTE[Math.floor(Math.random() * MYSTIC_PALETTE.length)];
@@ -112,16 +141,22 @@ function makeBubbleMaterial(isRare: boolean): { mat: THREE.MeshPhysicalMaterial;
   return { mat, palette };
 }
 
-function buildGrid() {
+function buildGrid(mask: PatternMask = fullMask()) {
   for (const b of bubbles) scene.remove(b.mesh);
   bubbles.length = 0;
 
   const offsetX = -((COLS - 1) * GAP) / 2;
   const offsetY = -((ROWS - 1) * GAP) / 2;
-  // 스테이지가 높을수록 레어 버블 등장률 증가 (5% → 5%+1%/stage, 최대 15%)
-  const rareRate = Math.min(0.15, 0.05 + (stage - 1) * 0.01);
+  // 챌린지엔 레어 등장률 조금 더 (짜릿함). 명상/일일은 스테이지 진행에 따라 증가.
+  const rareRate =
+    mode === "challenge"
+      ? 0.1
+      : Math.min(0.15, 0.05 + (stage - 1) * 0.01);
+
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
+      const i = r * COLS + c;
+      if (!mask[i]) continue;
       const isRare = Math.random() < rareRate;
       const { mat, palette } = makeBubbleMaterial(isRare);
       const mesh = new THREE.Mesh(bubbleGeo, mat);
@@ -143,7 +178,6 @@ function buildGrid() {
     }
   }
 }
-buildGrid();
 
 // ---------- 3. 도파민 폭발 시스템 ----------
 type Shard = {
@@ -166,16 +200,9 @@ const flashes: Flash[] = [];
 const ringGeo = new THREE.TorusGeometry(0.4, 0.06, 8, 32);
 
 function spawnExplosion(pos: THREE.Vector3, color: number, emissive: number, isRare: boolean = false) {
-  // 흰 행성(중앙 플래시 구체) 제거. 컬러 링 + 파편으로만 폭발.
-
-  // 1. 컬러 링 (도넛 - 외곽으로 확장)
   const ringMat = new THREE.MeshBasicMaterial({
-    color,
-    transparent: true,
-    opacity: 1,
-    blending: THREE.AdditiveBlending,
-    depthWrite: false,
-    side: THREE.DoubleSide,
+    color, transparent: true, opacity: 1,
+    blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
   });
   const ring = new THREE.Mesh(ringGeo, ringMat);
   ring.position.copy(pos);
@@ -183,15 +210,10 @@ function spawnExplosion(pos: THREE.Vector3, color: number, emissive: number, isR
   scene.add(ring);
   flashes.push({ mesh: ring, life: 1, maxScale: isRare ? 6.5 : 4.5, decay: 0.05 });
 
-  // 1-b. 레어 버블이면 2차 외곽 링 추가 (이중 충격파)
   if (isRare) {
     const ring2Mat = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      transparent: true,
-      opacity: 0.8,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
-      side: THREE.DoubleSide,
+      color: 0xffffff, transparent: true, opacity: 0.8,
+      blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide,
     });
     const ring2 = new THREE.Mesh(ringGeo, ring2Mat);
     ring2.position.copy(pos);
@@ -200,34 +222,28 @@ function spawnExplosion(pos: THREE.Vector3, color: number, emissive: number, isR
     flashes.push({ mesh: ring2, life: 1, maxScale: 9, decay: 0.04 });
   }
 
-  // 2. 다양한 모양·크기 파편 (레어는 50개, 일반 30개)
   const SHARD_COUNT = isRare ? 50 : 30;
   const speedBoost = isRare ? 1.4 : 1.0;
   for (let i = 0; i < SHARD_COUNT; i++) {
     const geo = shardGeos[i % shardGeos.length];
-    // 일반: 70% 본연색 / 30% 흰색. 레어: 50% 골드 / 50% 흰색
     const isAccent = Math.random() < (isRare ? 0.5 : 0.3);
     const c = isAccent ? 0xffffff : (Math.random() < 0.5 ? color : emissive);
     const mat = new THREE.MeshBasicMaterial({
-      color: c,
-      transparent: true,
-      opacity: 1,
-      blending: THREE.AdditiveBlending,
-      depthWrite: false,
+      color: c, transparent: true, opacity: 1,
+      blending: THREE.AdditiveBlending, depthWrite: false,
     });
     const m = new THREE.Mesh(geo, mat);
     m.position.copy(pos);
     const startScale = (0.6 + Math.random() * 0.8) * (isRare ? 1.2 : 1);
     m.scale.setScalar(startScale);
     scene.add(m);
-    // 구형 사방으로 폭발 + 위쪽 살짝 가중
     const theta = Math.random() * Math.PI * 2;
     const phi = Math.random() * Math.PI;
     const speed = (0.1 + Math.random() * 0.12) * speedBoost;
     const dir = new THREE.Vector3(
       Math.sin(phi) * Math.cos(theta),
       Math.sin(phi) * Math.sin(theta) + 0.2,
-      Math.cos(phi) * 0.4
+      Math.cos(phi) * 0.4,
     );
     shards.push({
       mesh: m,
@@ -238,11 +254,9 @@ function spawnExplosion(pos: THREE.Vector3, color: number, emissive: number, isR
     });
   }
 
-  // 4. 화면 섬광 (CSS overlay)
   triggerScreenFlash(isRare ? 0xffd66b : color);
 }
 
-// CSS 섬광 오버레이
 const flashOverlay = document.createElement("div");
 flashOverlay.style.cssText =
   "position:fixed;inset:0;pointer-events:none;z-index:5;opacity:0;transition:opacity 280ms cubic-bezier(0.32,0.72,0,1);mix-blend-mode:screen;";
@@ -256,19 +270,17 @@ function triggerScreenFlash(color: number) {
   });
 }
 
-// ---------- 4. 사운드: 도파민 팝(메인 톡 + 하모닉 + 화이트노이즈 버스트) ----------
+// ---------- 4. 사운드 ----------
 let audioCtx: AudioContext | null = null;
 function pop(color: number) {
   if (!audioCtx) audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
   const ctx = audioCtx;
-  // 컬러 → 음정 매핑 (HSL의 H로 추정)
   const r = ((color >> 16) & 0xff) / 255;
   const g = ((color >> 8) & 0xff) / 255;
   const b = (color & 0xff) / 255;
-  const tone = (r * 0.3 + g * 0.5 + b * 0.2); // 0~1
+  const tone = r * 0.3 + g * 0.5 + b * 0.2;
   const base = 320 + tone * 380;
 
-  // 메인 톡
   const o1 = ctx.createOscillator();
   const g1 = ctx.createGain();
   o1.type = "sine";
@@ -281,7 +293,6 @@ function pop(color: number) {
   o1.start();
   o1.stop(ctx.currentTime + 0.25);
 
-  // 5도 하모닉 (도파민 음정감)
   const o2 = ctx.createOscillator();
   const g2 = ctx.createGain();
   o2.type = "triangle";
@@ -293,7 +304,6 @@ function pop(color: number) {
   o2.start();
   o2.stop(ctx.currentTime + 0.3);
 
-  // 노이즈 버스트 (탁! 감)
   const noiseBuffer = ctx.createBuffer(1, ctx.sampleRate * 0.05, ctx.sampleRate);
   const ndata = noiseBuffer.getChannelData(0);
   for (let i = 0; i < ndata.length; i++) ndata[i] = (Math.random() - 0.5) * Math.exp(-i / (ctx.sampleRate * 0.01));
@@ -306,7 +316,7 @@ function pop(color: number) {
 }
 
 function hapticPop() {
-  if (navigator.vibrate) navigator.vibrate([8, 20, 12]); // 짧은 더블 강조
+  if (navigator.vibrate) navigator.vibrate([8, 20, 12]);
 }
 
 // ---------- 5. 인터랙션: 레이캐스트 ----------
@@ -341,6 +351,7 @@ function showStageToast(n: number) {
 }
 
 function tryPopAt(clientX: number, clientY: number) {
+  if (resultEl.getAttribute("data-show") === "true") return; // 결과 모달 중 입력 차단
   ndc.x = (clientX / window.innerWidth) * 2 - 1;
   ndc.y = -(clientY / window.innerHeight) * 2 + 1;
   raycaster.setFromCamera(ndc, camera);
@@ -355,29 +366,38 @@ function tryPopAt(clientX: number, clientY: number) {
   pop(bubble.color);
   hapticPop();
   bumpCombo();
-  // 점수: 레어 5배 + 콤보 배수 (콤보 2 이상부터 추가)
   const basePoints = bubble.rare ? 5 : 1;
   const comboBonus = comboCount >= 2 ? Math.floor(comboCount / 2) : 0;
   score += basePoints + comboBonus;
   scoreEl.textContent = String(score);
-  // 페이드아웃 후 제거
+
   const mat = bubble.mesh.material as THREE.MeshPhysicalMaterial;
   const fadeStart = performance.now();
   const fade = () => {
     const t = (performance.now() - fadeStart) / 200;
     mat.opacity = Math.max(0, 0.85 * (1 - t));
-    bubble.mesh.scale.multiplyScalar(1 + 0.012); // 빠르게 커지며 사라짐
+    bubble.mesh.scale.multiplyScalar(1 + 0.012);
     if (t < 1) requestAnimationFrame(fade);
     else scene.remove(bubble.mesh);
   };
   fade();
 
-  // 모든 버블 터지면 → 스테이지 클리어 토스트 + 다음 스테이지
   if (bubbles.every((b) => b.popped)) {
-    stage += 1;
-    stageEl.textContent = String(stage);
-    showStageToast(stage);
-    setTimeout(() => buildGrid(), 1100);
+    if (mode === "challenge") {
+      // 챌린지: 빠른 재생성, 스테이지 없음
+      setTimeout(() => buildGrid(fullMask()), 500);
+    } else if (mode === "daily") {
+      // 일일 패턴: 1회 클리어 시 결과
+      if (!dailyDone) {
+        dailyDone = true;
+        setTimeout(() => endDaily(), 800);
+      }
+    } else {
+      stage += 1;
+      stageEl.textContent = String(stage);
+      showStageToast(stage);
+      setTimeout(() => buildGrid(fullMask()), 1100);
+    }
   }
 }
 
@@ -400,10 +420,122 @@ canvas.addEventListener("pointerup", pointerUp);
 canvas.addEventListener("pointercancel", pointerUp);
 canvas.addEventListener("pointerleave", pointerUp);
 
-// ---------- 6. 시작 버튼 ----------
-startBtn.addEventListener("click", () => {
+// ---------- 6. 모드 흐름 ----------
+function formatTime(ms: number): string {
+  const s = Math.ceil(ms / 1000);
+  const mm = Math.floor(s / 60);
+  const ss = s % 60;
+  return `${mm}:${String(ss).padStart(2, "0")}`;
+}
+
+function startMode(m: Mode) {
+  mode = m;
+  score = 0;
+  stage = 1;
+  dailyDone = false;
+  scoreEl.textContent = "0";
+  stageEl.textContent = "1";
   hero.classList.add("is-hidden");
+  resultEl.setAttribute("data-show", "false");
+  resultEl.setAttribute("hidden", "");
+
+  if (challengeTimer) {
+    challengeTimer.stop();
+    challengeTimer = null;
+  }
+
+  if (m === "challenge") {
+    stageBlockEl.setAttribute("hidden", "");
+    timerBlockEl.removeAttribute("hidden");
+    timerEl.textContent = formatTime(CHALLENGE_DURATION_MS);
+    buildGrid(fullMask());
+    challengeTimer = new ChallengeTimer(
+      CHALLENGE_DURATION_MS,
+      (rem) => {
+        timerEl.textContent = formatTime(rem);
+      },
+      () => {
+        endChallenge();
+      },
+    );
+    challengeTimer.start();
+  } else if (m === "daily") {
+    stageBlockEl.removeAttribute("hidden");
+    timerBlockEl.setAttribute("hidden", "");
+    buildGrid(todayPattern().mask);
+  } else {
+    stageBlockEl.removeAttribute("hidden");
+    timerBlockEl.setAttribute("hidden", "");
+    buildGrid(fullMask());
+  }
+}
+
+function endChallenge() {
+  challengeTimer?.stop();
+  challengeTimer = null;
+  const isNew = saveBest(score);
+  showResult({
+    title: "1분 챌린지 종료",
+    bestText: `나의 베스트 ${getBest()}`,
+    isNewBest: isNew,
+  });
+}
+
+function endDaily() {
+  const seed = todaySeed();
+  const isNew = saveDailyBest(seed, score);
+  showResult({
+    title: `오늘의 패턴 — ${todayPatternName()} 클리어!`,
+    bestText: `오늘 베스트 ${getDailyBest(seed)}`,
+    isNewBest: isNew,
+  });
+}
+
+function showResult(opts: { title: string; bestText: string; isNewBest: boolean }) {
+  resultTitle.textContent = opts.title;
+  resultScore.textContent = String(score);
+  resultBest.textContent = opts.bestText;
+  resultNewBadge.setAttribute("data-show", opts.isNewBest ? "true" : "false");
+  resultEl.removeAttribute("hidden");
+  requestAnimationFrame(() => resultEl.setAttribute("data-show", "true"));
+}
+
+btnMeditation.addEventListener("click", () => startMode("meditation"));
+btnChallenge.addEventListener("click", () => startMode("challenge"));
+btnDaily.addEventListener("click", () => startMode("daily"));
+btnReplay.addEventListener("click", () => startMode(mode));
+btnHome.addEventListener("click", () => {
+  resultEl.setAttribute("data-show", "false");
+  setTimeout(() => resultEl.setAttribute("hidden", ""), 300);
+  hero.classList.remove("is-hidden");
 });
+btnShare.addEventListener("click", async () => {
+  let title: string, subtitle: string, best: number, patternName: string | undefined;
+  if (mode === "challenge") {
+    title = "1분 챌린지";
+    subtitle = "60초의 기록";
+    best = getBest();
+    patternName = undefined;
+  } else if (mode === "daily") {
+    title = `오늘의 ${todayPatternName()}`;
+    subtitle = "오늘만의 패턴";
+    best = getDailyBest(todaySeed());
+    patternName = todayPatternName();
+  } else {
+    title = "버블팝랩";
+    subtitle = "오늘 터트린 버블";
+    best = getBest();
+    patternName = undefined;
+  }
+  try {
+    const blob = await buildShareCard({ title, score, subtitle, best, patternName });
+    await shareOrDownload(blob, "bubble-pop.png", "버블팝랩", `${title} ${score}점!`);
+  } catch (err) {
+    console.error("share failed", err);
+  }
+});
+
+heroPatternName.textContent = todayPatternName();
 
 // ---------- 7. 리사이즈 ----------
 window.addEventListener("resize", () => {
@@ -413,17 +545,17 @@ window.addEventListener("resize", () => {
 });
 
 // ---------- 8. 애니메이션 루프 ----------
+buildGrid(fullMask()); // 히어로 뒤로 깔리는 초기 그리드
+
 const clock = new THREE.Clock();
 function tick() {
   const t = clock.getElapsedTime();
-  // 둥실 떠다니는 모션
   for (const b of bubbles) {
     if (b.popped) continue;
     b.mesh.position.y = b.basePos.y + Math.sin(t * 1.2 + b.floatPhase) * 0.08;
     b.mesh.position.x = b.basePos.x + Math.cos(t * 0.8 + b.floatPhase) * 0.04;
     b.mesh.rotation.y = t * 0.2 + b.floatPhase;
   }
-  // 플래시·링 업데이트 (빠르게 확장하며 페이드)
   for (let i = flashes.length - 1; i >= 0; i--) {
     const f = flashes[i];
     f.life -= f.decay;
@@ -437,17 +569,15 @@ function tick() {
       flashes.splice(i, 1);
     }
   }
-  // 파편 업데이트 (회전 + 중력 + 페이드)
   for (let i = shards.length - 1; i >= 0; i--) {
     const s = shards[i];
     s.mesh.position.add(s.velocity);
-    s.velocity.multiplyScalar(0.96); // 공기저항
-    s.velocity.y -= 0.004; // 중력
+    s.velocity.multiplyScalar(0.96);
+    s.velocity.y -= 0.004;
     s.mesh.rotation.x += s.spin.x;
     s.mesh.rotation.y += s.spin.y;
     s.mesh.rotation.z += s.spin.z;
     s.life -= 0.018;
-    // 후반에 살짝 커졌다 작아짐 (도파민 펄스)
     const pulse = s.life > 0.7 ? s.startScale * (1 + (1 - s.life) * 0.6) : s.startScale * s.life * 1.4;
     s.mesh.scale.setScalar(Math.max(0.01, pulse));
     (s.mesh.material as THREE.MeshBasicMaterial).opacity = Math.max(0, s.life);

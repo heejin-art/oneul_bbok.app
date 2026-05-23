@@ -4,18 +4,28 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
     <meta name="theme-color" content="#7AE5E5" />
-    <title>버블팝랩 · BubblePopLab</title>
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="버블팝랩" />
+    <meta name="description" content="무한 뽁뽁이 + 1분 챌린지 + 오늘의 패턴. 손가락만 움직이세요." />
+    <link rel="apple-touch-icon" href="/icons/icon-192.png" />
     <link rel="stylesheet" href="/src/style.css" />
+    <title>버블팝랩 · BubblePopLab</title>
   </head>
   <body data-theme="bubble">
     <main id="app">
       <canvas id="scene"></canvas>
+
       <header class="hud">
         <div class="hud__left">
           <div class="hud__brand">버블팝랩</div>
-          <div class="hud__stage">
+          <div id="stageBlock" class="hud__stage">
             <span class="hud__stage-label">STAGE</span>
             <span id="stage" class="hud__stage-value">1</span>
+          </div>
+          <div id="timerBlock" class="hud__timer" hidden>
+            <span class="hud__timer-label">TIME</span>
+            <span id="timer" class="hud__timer-value">1:00</span>
           </div>
         </div>
         <div class="hud__score">
@@ -23,20 +33,63 @@
           <span id="score" class="hud__score-value">0</span>
         </div>
       </header>
+
       <div id="combo" class="combo" data-show="false">
         <span class="combo__x">×</span>
         <span id="comboValue" class="combo__value">2</span>
         <span class="combo__label">COMBO</span>
       </div>
+
       <div id="stageToast" class="stage-toast" data-show="false">
         <span class="stage-toast__small">STAGE</span>
         <span id="stageToastNum" class="stage-toast__num">1</span>
         <span class="stage-toast__big">CLEAR!</span>
       </div>
+
+      <!-- 랜딩 히어로 -->
       <section class="hero" id="hero">
-        <h1 class="hero__title">무한 뽁뽁이</h1>
+        <div class="hero__brand">WOOHEEJIN</div>
+        <h1 class="hero__title">버블팝랩</h1>
         <p class="hero__subtitle">머리 비우고, 손가락만 움직이세요</p>
-        <button id="startBtn" class="hero__cta">시작</button>
+
+        <div class="hero__modes">
+          <button id="btnMeditation" class="mode-card mode-card--meditation">
+            <span class="mode-card__icon">∞</span>
+            <span class="mode-card__name">명상 모드</span>
+            <span class="mode-card__desc">무한, 타이머 없음</span>
+          </button>
+          <button id="btnChallenge" class="mode-card mode-card--challenge">
+            <span class="mode-card__icon">⏱</span>
+            <span class="mode-card__name">1분 챌린지</span>
+            <span class="mode-card__desc">베스트 기록에 도전</span>
+          </button>
+          <button id="btnDaily" class="mode-card mode-card--daily">
+            <span class="mode-card__icon">★</span>
+            <span class="mode-card__name">오늘의 패턴</span>
+            <span class="mode-card__desc" id="heroPatternName">하트</span>
+          </button>
+        </div>
+
+        <footer class="hero__footer">
+          <a href="/privacy.html">개인정보처리방침</a>
+          <span aria-hidden="true">·</span>
+          <a href="/terms.html">이용약관</a>
+        </footer>
+      </section>
+
+      <!-- 결과 모달 -->
+      <section class="result" id="result" hidden data-show="false">
+        <div class="result__card">
+          <div id="resultNewBadge" class="result__new-badge" data-show="false">NEW BEST!</div>
+          <h2 class="result__title" id="resultTitle">챌린지 종료</h2>
+          <div class="result__score" id="resultScore">0</div>
+          <div class="result__best" id="resultBest">나의 베스트 0</div>
+          <div class="result__actions">
+            <button id="btnReplay" class="result__btn result__btn--primary">다시 도전</button>
+            <button id="btnShare" class="result__btn">공유</button>
+            <button id="btnHome" class="result__btn result__btn--ghost">홈으로</button>
+          </div>
+        </div>
       </section>
     </main>
     <script type="module" src="/src/main.ts"></script>
