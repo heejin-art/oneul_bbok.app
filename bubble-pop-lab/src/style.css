@@ -1,7 +1,7 @@
 :root {
   --font-kr: "NanumSquareRound", "Pretendard Variable", "Apple SD Gothic Neo", system-ui, sans-serif;
   --ease-soft: cubic-bezier(0.32, 0.72, 0, 1);
-  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --shadow-glass: 0 4px 12px rgba(0, 0, 0, 0.06);
   --radius-card: 24px;
 }
 
@@ -74,11 +74,11 @@ body {
 .hud__brand::before {
   content: "";
   position: absolute; inset: 0;
-  background: rgba(255,255,255,0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(255,255,255,0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border-radius: 999px;
-  box-shadow: 0 4px 16px rgba(90,111,255,0.12);
+  box-shadow: 0 2px 8px rgba(90,111,255,0.08);
   z-index: -1;
 }
 .hud__brand span {
@@ -99,12 +99,12 @@ body {
   display: flex;
   align-items: baseline;
   gap: 4px;
-  background: rgba(255,255,255,0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: rgba(255,255,255,0.9);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   padding: 8px 12px;
   border-radius: 999px;
-  box-shadow: 0 4px 16px rgba(90,111,255,0.12);
+  box-shadow: 0 2px 8px rgba(90,111,255,0.08);
 }
 
 .hud__counter--month {
@@ -163,8 +163,8 @@ body {
   font-weight: 700;
   color: var(--text-muted);
   background: var(--glass);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(90, 111, 255, 0.12);
   padding: 7px 14px;
   border-radius: 999px;
@@ -229,8 +229,8 @@ body {
   gap: 6px;
   white-space: nowrap;
   background: var(--glass);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   padding: 8px 16px;
   border-radius: 999px;
   box-shadow: var(--shadow-glass);
@@ -253,8 +253,8 @@ body {
   align-items: center;
   gap: 6px;
   background: var(--glass);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   padding: 10px 16px;
   border-radius: 999px;
   box-shadow: var(--shadow-glass);
@@ -321,8 +321,8 @@ body {
   font-weight: 800;
   color: var(--text);
   background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   padding: 14px 28px;
   border-radius: 999px;
   box-shadow: 0 8px 32px rgba(90, 111, 255, 0.2);
@@ -387,7 +387,7 @@ body {
   background: linear-gradient(135deg, var(--emphasis), var(--accent-2));
   -webkit-background-clip: text; background-clip: text; color: transparent;
   margin-bottom: 8px;
-  filter: drop-shadow(0 2px 12px rgba(90, 111, 255, 0.2));
+  filter: drop-shadow(0 1px 6px rgba(90, 111, 255, 0.12));
 }
 .hero__subtitle { font-size: 16px; color: var(--text-muted); margin-bottom: 36px; }
 
@@ -410,11 +410,11 @@ body {
 .design-b .hero__stats {
   display: flex; flex-direction: column; align-items: center;
   position: relative;
-  background: rgba(255,255,255,0.85);
-  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  background: rgba(255,255,255,0.9);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   border: none;
   border-radius: 28px; padding: 24px 36px 20px; margin-bottom: 20px;
-  box-shadow: 0 8px 32px rgba(90,111,255,0.1);
+  box-shadow: 0 4px 16px rgba(90,111,255,0.06);
   width: min(360px, 86vw);
   isolation: isolate;
 }
@@ -422,7 +422,7 @@ body {
   content: "";
   position: absolute; inset: -3px;
   border-radius: 27px;
-  background: linear-gradient(270deg, rgba(90,111,255,0.7), rgba(167,139,250,0.7), rgba(255,90,138,0.6), rgba(255,180,86,0.6), rgba(122,229,229,0.7), rgba(90,111,255,0.7));
+  background: linear-gradient(270deg, rgba(90,111,255,0.45), rgba(167,139,250,0.45), rgba(255,90,138,0.4), rgba(255,180,86,0.4), rgba(122,229,229,0.45), rgba(90,111,255,0.45));
   background-size: 300% 100%;
   animation: borderGlow 5s linear infinite;
   z-index: -2;
@@ -458,7 +458,7 @@ body {
   background: linear-gradient(135deg, var(--emphasis), var(--accent-2));
   -webkit-background-clip: text; background-clip: text; color: transparent;
   font-variant-numeric: tabular-nums;
-  filter: drop-shadow(0 2px 8px rgba(90,111,255,0.15));
+  filter: drop-shadow(0 1px 4px rgba(90,111,255,0.1));
   line-height: 1.1;
 }
 .design-b .hero__stat-unit { font-size: 18px; font-weight: 700; color: var(--text-muted); }
@@ -471,9 +471,9 @@ body {
 }
 .design-b .mode-card {
   padding: 18px 22px; border-radius: 20px;
-  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
-  box-shadow: 0 6px 24px rgba(0,0,0,0.08);
-  background: rgba(255,255,255,0.85);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+  background: rgba(255,255,255,0.9);
 }
 .design-b .mode-card--meditation { border: 2px solid rgba(90,111,255,0.25); }
 .design-b .mode-card--immersion { border: 2px solid rgba(167,139,250,0.25); }
@@ -488,7 +488,7 @@ body {
   display: grid; grid-template-columns: 48px 1fr; grid-template-rows: auto auto;
   align-items: center; gap: 2px 16px;
   background: rgba(255, 255, 255, 0.7);
-  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   border: 1.5px solid rgba(255, 255, 255, 0.8); border-radius: 20px;
   padding: 18px 22px;
   box-shadow: 0 8px 24px rgba(90, 111, 255, 0.12);
@@ -513,7 +513,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   z-index: 28; padding: 24px;
   background: rgba(255,255,255,0.7);
-  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   opacity: 0; pointer-events: none;
   transition: opacity 320ms var(--ease-soft);
 }
@@ -605,7 +605,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   z-index: 30; padding: 24px;
   background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   opacity: 0; pointer-events: none;
   transition: opacity 320ms var(--ease-soft);
 }
@@ -675,7 +675,7 @@ body {
   display: flex; align-items: center; justify-content: center;
   z-index: 40; padding: 24px;
   background: rgba(255,255,255,0.8);
-  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
   opacity: 0; pointer-events: none;
   transition: opacity 280ms var(--ease-soft);
 }
@@ -686,7 +686,7 @@ body {
   background: rgba(255,255,255,0.95); border-radius: 24px;
   padding: 32px 24px 24px; width: min(420px, 92vw);
   max-height: 80vh; overflow-y: auto;
-  box-shadow: 0 16px 48px rgba(90,111,255,0.15);
+  box-shadow: 0 8px 24px rgba(90,111,255,0.08);
   line-height: 1.7; color: var(--text);
 }
 .privacy-overlay__card h2 { font-size: 20px; font-weight: 800; margin-bottom: 8px; }
