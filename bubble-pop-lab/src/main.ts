@@ -534,6 +534,13 @@ function hapticMega() { if (navigator.vibrate) navigator.vibrate([20, 30, 20, 30
 
 // ---------- 4. 사운드 ----------
 let audioCtx: AudioContext | null = null;
+function ensureAudio() {
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+  }
+  if (audioCtx.state === "suspended") audioCtx.resume();
+}
+document.addEventListener("pointerdown", ensureAudio, { once: true });
 function pop(color: number) {
   if (!audioCtx) audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
   const ctx = audioCtx;
@@ -658,7 +665,7 @@ function tryPopAt(clientX: number, clientY: number) {
         stressLabelEl.setAttribute("hidden", "");
         stressLabelEl.classList.remove("is-exploding");
         endSession();
-      }, 300);
+      }, 900);
     } else {
       level += 1;
       updateLevelHud();
