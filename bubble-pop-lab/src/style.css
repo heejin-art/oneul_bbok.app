@@ -15,6 +15,10 @@
   --glass: rgba(255, 255, 255, 0.6);
 }
 
+@media (prefers-color-scheme: dark) {
+  :root { color-scheme: light; }
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 html, body, #app {
