@@ -1035,3 +1035,17 @@ function tick() {
   requestAnimationFrame(tick);
 }
 tick();
+
+// Android 뒤로가기 버튼
+window.addEventListener("popstate", () => {
+  if (privacyOverlay.getAttribute("data-show") === "true") {
+    privacyOverlay.setAttribute("data-show", "false");
+    setTimeout(() => privacyOverlay.setAttribute("hidden", ""), 280);
+  } else if (resultEl.getAttribute("data-show") === "true") {
+    btnHome.click();
+  } else if (playing) {
+    endSession();
+  }
+  history.pushState(null, "", location.href);
+});
+history.pushState(null, "", location.href);
