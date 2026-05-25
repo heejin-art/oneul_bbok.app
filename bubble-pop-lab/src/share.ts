@@ -42,13 +42,13 @@ export async function buildShareCard(opts: ShareCardOpts): Promise<Blob> {
 
   // 브랜드
   ctx.fillStyle = "rgba(26,31,54,0.55)";
-  ctx.font = "700 32px 'Pretendard Variable', system-ui, sans-serif";
+  ctx.font = "700 32px 'NanumSquareRound', system-ui, sans-serif";
   ctx.textAlign = "center";
   ctx.fillText("오늘뽁 · Todapop", W / 2, 120);
 
   // 타이틀
   ctx.fillStyle = "#1A1F36";
-  ctx.font = "800 64px 'Pretendard Variable', system-ui, sans-serif";
+  ctx.font = "800 64px 'NanumSquareRound', system-ui, sans-serif";
   ctx.fillText(opts.title, W / 2, 240);
 
   // 점수
@@ -56,18 +56,18 @@ export async function buildShareCard(opts: ShareCardOpts): Promise<Blob> {
   scoreGrad.addColorStop(0, "#5A6FFF");
   scoreGrad.addColorStop(1, "#FFB7D5");
   ctx.fillStyle = scoreGrad;
-  ctx.font = "900 240px 'Pretendard Variable', system-ui, sans-serif";
+  ctx.font = "900 240px 'NanumSquareRound', system-ui, sans-serif";
   ctx.fillText(String(opts.score), W / 2, 540);
 
   // 서브타이틀
   ctx.fillStyle = "rgba(26,31,54,0.7)";
-  ctx.font = "600 36px 'Pretendard Variable', system-ui, sans-serif";
+  ctx.font = "600 36px 'NanumSquareRound', system-ui, sans-serif";
   ctx.fillText(opts.subtitle, W / 2, 640);
 
   // 베스트
   if (opts.best !== undefined) {
     ctx.fillStyle = "rgba(26,31,54,0.45)";
-    ctx.font = "500 28px 'Pretendard Variable', system-ui, sans-serif";
+    ctx.font = "500 28px 'NanumSquareRound', system-ui, sans-serif";
     ctx.fillText(`나의 베스트 ${opts.best}`, W / 2, 720);
   }
 
@@ -81,13 +81,13 @@ export async function buildShareCard(opts: ShareCardOpts): Promise<Blob> {
     roundRect(ctx, badgeX, badgeY, badgeW, badgeH, 36);
     ctx.fill();
     ctx.fillStyle = "#5A6FFF";
-    ctx.font = "700 28px 'Pretendard Variable', system-ui, sans-serif";
+    ctx.font = "700 28px 'NanumSquareRound', system-ui, sans-serif";
     ctx.fillText(`오늘의 패턴 — ${opts.patternName}`, W / 2, badgeY + 46);
   }
 
   // 푸터
   ctx.fillStyle = "rgba(26,31,54,0.4)";
-  ctx.font = "500 24px 'Pretendard Variable', system-ui, sans-serif";
+  ctx.font = "500 24px 'NanumSquareRound', system-ui, sans-serif";
   ctx.fillText("오늘뽁 · 스트레스를 터뜨려요", W / 2, H - 80);
 
   return await new Promise<Blob>((resolve) =>
@@ -121,7 +121,16 @@ export async function shareOrDownload(blob: Blob, filename: string, title: strin
       // 사용자 취소
     }
   }
-  // 2) 다운로드 폴백
+  // 2) 텍스트만 공유 (파일 미지원 브라우저)
+  if (navigator.share) {
+    try {
+      await navigator.share({ title, text });
+      return "shared";
+    } catch {
+      // 사용자 취소
+    }
+  }
+  // 3) 다운로드 폴백
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;

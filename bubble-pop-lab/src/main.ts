@@ -40,6 +40,8 @@ const clearTextEl = document.getElementById("clearText")!;
 const immersionHud = document.getElementById("immersionHud") as HTMLElement;
 const immersionTimerEl = document.getElementById("immersionTimer")!;
 const immersionBonusEl = document.getElementById("immersionBonus")!;
+const immersionLevelNumEl = document.getElementById("immersionLevelNum")!;
+const immersionRemainingEl = document.getElementById("immersionRemaining")!;
 const hudBrand = document.getElementById("hudBrand") as HTMLElement;
 const btnStop = document.getElementById("btnStop") as HTMLElement;
 const gameInfoHud = document.getElementById("gameInfoHud") as HTMLElement;
@@ -212,6 +214,7 @@ function levelScale(): number {
 }
 function updateLevelHud() {
   levelNumEl.textContent = String(level);
+  immersionLevelNumEl.textContent = String(level);
 }
 
 function clearBubbles() {
@@ -369,17 +372,18 @@ const decoBubbles: THREE.Mesh[] = [];
 function buildDecoBubbles() {
   for (const m of decoBubbles) scene.remove(m);
   decoBubbles.length = 0;
-  const count = 25;
+  const count = 20;
   for (let i = 0; i < count; i++) {
-    const isRare = Math.random() < 0.1;
+    const isRare = Math.random() < 0.08;
     const { mat } = makeBubbleMaterial(isRare);
+    mat.opacity = 0.45;
     const mesh = new THREE.Mesh(bubbleGeo, mat);
     mesh.position.set(
       (Math.random() - 0.5) * 14,
       (Math.random() - 0.5) * 18,
       (Math.random() - 0.5) * 2,
     );
-    const sizes = [0.4, 0.6, 0.8, 1.0, 1.3, 1.6];
+    const sizes = [0.4, 0.6, 0.8, 1.0, 1.2];
     mesh.scale.setScalar(sizes[Math.floor(Math.random() * sizes.length)]);
     mesh.userData.floatPhase = Math.random() * Math.PI * 2;
     scene.add(mesh);
@@ -474,6 +478,24 @@ function spawnMegaExplosion(pos: THREE.Vector3, color: number, emissive: number)
   setTimeout(() => triggerScreenFlash(0xFF5A8A), 80);
 }
 
+function spawnMasterCelebration() {
+  const center = new THREE.Vector3(camera.position.x, camera.position.y, 0);
+  const offsets = [
+    new THREE.Vector3(-2, 1, 0), new THREE.Vector3(2, 1, 0),
+    new THREE.Vector3(0, -1.5, 0), new THREE.Vector3(-1, 2, 0),
+    new THREE.Vector3(1, -2, 0),
+  ];
+  for (const off of offsets) {
+    const pos = center.clone().add(off);
+    spawnMegaExplosion(pos, 0xFFD700, 0xFF5A8A);
+  }
+  shakeScreen(16, 800);
+  triggerScreenFlash(0xFFD700);
+  setTimeout(() => triggerScreenFlash(0xFF5A8A), 150);
+  setTimeout(() => triggerScreenFlash(0x5A6FFF), 300);
+  hapticMega();
+}
+
 function shakeScreen(intensity = 10, duration = 400) {
   const start = performance.now();
   function shake() {
@@ -553,6 +575,7 @@ function bumpCombo() {
 function updateRemaining() {
   const left = bubbles.filter((b) => !b.popped).length;
   remainingCountEl.textContent = String(left);
+  immersionRemainingEl.textContent = String(left);
 }
 
 function showToast(el: HTMLElement, textEl: HTMLElement, msg: string, ms = 1400) {
@@ -619,15 +642,25 @@ function tryPopAt(clientX: number, clientY: number) {
   if (allPopped) {
     gridClears += 1;
 
+    // 올클리어 체크 — 스트레스 제외, 레벨 10 이상이면 무조건 여기서 끝
+    if (mode !== "stress" && level >= 10) {
+      spawnMasterCelebration();
+      const msg = mode === "meditation" ? "모든 레벨 클리어!" : "시간 안에 올클리어!";
+      showToast(clearToastEl, clearTextEl, msg, 2500);
+      playing = false;
+      setTimeout(() => endSession(), 1800);
+      return;
+    }
+
     if (mode === "stress") {
       stressLabelEl.classList.add("is-exploding");
       setTimeout(() => {
         stressLabelEl.setAttribute("hidden", "");
         stressLabelEl.classList.remove("is-exploding");
         endSession();
-      }, 900);
+      }, 300);
     } else {
-      level = Math.min(level + 1, 10);
+      level += 1;
       updateLevelHud();
       showToast(clearToastEl, clearTextEl, levelUpPraise(level, mode), 1400);
       if (mode === "immersion") {
@@ -674,6 +707,7 @@ function startMode(m: Mode) {
   resultEl.setAttribute("data-show", "false");
   resultEl.setAttribute("hidden", "");
   hudBrand.setAttribute("hidden", "");
+  hudTodayCounter.removeAttribute("hidden");
   btnStop.removeAttribute("hidden");
   gameInfoHud.removeAttribute("hidden");
   monthInfo.setAttribute("hidden", "");
@@ -684,6 +718,7 @@ function startMode(m: Mode) {
   stressLabelEl.setAttribute("hidden", "");
 
   if (m === "immersion") {
+    gameInfoHud.setAttribute("hidden", "");
     immersionRemaining = IMMERSION_START_MS;
     immersionLastTick = performance.now();
     immersionHud.removeAttribute("hidden");
@@ -701,7 +736,7 @@ function startMode(m: Mode) {
 function endSession() {
   playing = false;
   btnStop.setAttribute("hidden", "");
-  hudBrand.removeAttribute("hidden");
+  hudBrand.setAttribute("hidden", "");
   immersionHud.setAttribute("hidden", "");
   gameInfoHud.setAttribute("hidden", "");
   clearStressLabels();
@@ -724,12 +759,12 @@ function endSession() {
     resultStressWord.setAttribute("hidden", "");
     resultCountWrap.removeAttribute("hidden");
     if (mode === "immersion") {
-      title = `${formatElapsed(elapsed)} 동안 몰입!`;
-      praise = pickResultPraise();
+      title = level >= 10 ? "몰입 마스터 달성!" : `${formatElapsed(elapsed)} 동안 몰입!`;
+      praise = level >= 10 ? `${formatElapsed(elapsed)} 만에 올클리어!\n완벽한 집중력이었어요.` : pickResultPraise();
       summary = `레벨 ${level} · ${gridClears}판 클리어`;
     } else {
-      title = "시원하게 비웠어요";
-      praise = pickResultPraise();
+      title = level >= 10 ? "뽁뽁 마스터 달성!" : "시원하게 비웠어요";
+      praise = level >= 10 ? "10단계 전부 클리어!\n오늘 스트레스, 완전히 날려버렸어요." : pickResultPraise();
       summary = `레벨 ${level} · ${formatElapsed(elapsed)} 동안 뽁뽁`;
     }
   }
@@ -743,8 +778,8 @@ function endSession() {
   else if (mode === "immersion") btnOther.textContent = "명상 모드로 쉬기";
   else btnOther.textContent = "명상 모드 해보기";
 
-  // 레벨 2 이상이면 초기화 버튼 표시
-  if (level > 1 && mode !== "stress") {
+  // 레벨 2~9이면 초기화 버튼 표시 (올클리어 시 "한 번 더"가 이미 Lv.1부터이므로 숨김)
+  if (level > 1 && level < 10 && mode !== "stress") {
     btnResetLevel.removeAttribute("hidden");
   } else {
     btnResetLevel.setAttribute("hidden", "");
@@ -799,6 +834,9 @@ btnHome.addEventListener("click", () => {
     fitCamera();
     buildDecoBubbles();
     hero.classList.remove("is-hidden");
+    hudTodayCounter.setAttribute("hidden", "");
+    hudBrand.removeAttribute("hidden");
+    updateHeroGreeting();
   }, 300);
 });
 btnOther.addEventListener("click", () => {
@@ -829,6 +867,103 @@ btnShare.addEventListener("click", async () => {
     await shareOrDownload(blob, "todapop.png", "오늘뽁", `${sessionCount}개의 스트레스를 터뜨렸어요!`);
   } catch (err) { console.error("share failed", err); }
 });
+
+// 오늘 카운터 홈에서 숨기기 / 월간 i 버튼
+const hudTodayCounter = document.getElementById("hudTodayCounter")!;
+const btnMonthInfo = document.getElementById("btnMonthInfo")!;
+hudTodayCounter.setAttribute("hidden", "");
+hudBrand.removeAttribute("hidden");
+const monthTooltip = document.getElementById("monthTooltip")!;
+btnMonthInfo.addEventListener("click", () => {
+  monthTooltip.setAttribute("data-show", "true");
+  setTimeout(() => monthTooltip.setAttribute("data-show", "false"), 2000);
+});
+
+// 개인정보처리방침 오버레이
+const privacyOverlay = document.getElementById("privacyOverlay")!;
+const btnPrivacy = document.getElementById("btnPrivacy")!;
+const btnPrivacyClose = document.getElementById("btnPrivacyClose")!;
+btnPrivacy.addEventListener("click", (e) => {
+  e.preventDefault();
+  privacyOverlay.removeAttribute("hidden");
+  requestAnimationFrame(() => privacyOverlay.setAttribute("data-show", "true"));
+});
+btnPrivacyClose.addEventListener("click", () => {
+  privacyOverlay.setAttribute("data-show", "false");
+  setTimeout(() => privacyOverlay.setAttribute("hidden", ""), 280);
+});
+
+// 초기 HUD 상태
+hudBrand.removeAttribute("hidden");
+
+// 감성 인사 (A안 전용)
+const heroGreeting = document.getElementById("heroGreeting")!;
+const heroTodayNum = document.getElementById("heroTodayNum")!;
+
+const GREETINGS_F: Record<string, string> = {
+  dawn: "아직 안 잔거야? 좀 쉬어",
+  earlyMorning: "좋은 아침! 한 판 하고 가",
+  morning: "잠깐 쉬어가, 한 판 어때?",
+  lunch: "점심 먹었어? 밥 잘 챙겨먹어!",
+  afternoon: "거의 다 왔어, 여기 두고 가",
+  evening: "고생했어, 스트레스 털고 가자",
+  night: "수고했어, 다 터뜨리고 자",
+};
+
+const GREETINGS_T: Record<string, string> = {
+  dawn: "새벽 리프레시, 한 판",
+  earlyMorning: "하루 시작 전 워밍업",
+  morning: "집중력 충전 브레이크",
+  lunch: "점심 후 뇌 리셋",
+  afternoon: "오후 슬럼프 탈출",
+  evening: "하루 마감 정리",
+  night: "머리 비우고 마무리",
+};
+
+function getTimeSlot(): string {
+  const h = new Date().getHours();
+  if (h < 6) return "dawn";
+  if (h < 9) return "earlyMorning";
+  if (h < 12) return "morning";
+  if (h < 14) return "lunch";
+  if (h < 18) return "afternoon";
+  if (h < 21) return "evening";
+  return "night";
+}
+
+let vibeMode: "F" | "T" = (localStorage.getItem("bp.vibe") as "F" | "T") || "F";
+
+function updateHeroGreeting() {
+  const slot = getTimeSlot();
+  const greetings = vibeMode === "F" ? GREETINGS_F : GREETINGS_T;
+  heroGreeting.textContent = greetings[slot];
+  heroTodayNum.textContent = getTodayCount().toLocaleString();
+}
+const btnVibe = document.getElementById("btnVibe")!;
+const btnVibeInfo = document.getElementById("btnVibeInfo")!;
+const vibeTooltip = document.getElementById("vibeTooltip")!;
+btnVibeInfo.addEventListener("click", () => {
+  vibeTooltip.setAttribute("data-show", "true");
+  setTimeout(() => vibeTooltip.setAttribute("data-show", "false"), 2000);
+});
+function updateVibeButton() {
+  btnVibe.textContent = vibeMode === "F" ? "감성" : "이성";
+  btnVibe.setAttribute("data-vibe", vibeMode);
+}
+updateVibeButton();
+let vibeFirstTap = !localStorage.getItem("bp.vibe.seen");
+btnVibe.addEventListener("click", () => {
+  vibeMode = vibeMode === "F" ? "T" : "F";
+  localStorage.setItem("bp.vibe", vibeMode);
+  updateVibeButton();
+  updateHeroGreeting();
+  if (vibeFirstTap) {
+    showToast(praiseToastEl, praiseTextEl, vibeMode === "T" ? "이성 모드로 전환! 탭해서 바꿀 수 있어요" : "감성 모드로 전환! 탭해서 바꿀 수 있어요", 2000);
+    localStorage.setItem("bp.vibe.seen", "1");
+    vibeFirstTap = false;
+  }
+});
+updateHeroGreeting();
 
 // 초기 표시
 monthLabelEl.textContent = currentMonthLabel();

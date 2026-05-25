@@ -6,7 +6,7 @@
   <title>개인정보처리방침 — 오늘뽁</title>
   <style>
     body {
-      font-family: "Pretendard Variable", "Apple SD Gothic Neo", system-ui, sans-serif;
+      font-family: "NanumSquareRound", "Pretendard Variable", "Apple SD Gothic Neo", system-ui, sans-serif;
       max-width: 600px;
       margin: 0 auto;
       padding: 40px 20px;
@@ -18,9 +18,29 @@
     h2 { font-size: 18px; margin-top: 32px; margin-bottom: 12px; }
     p { margin-bottom: 16px; }
     .date { color: rgba(26,31,54,0.5); font-size: 13px; }
+    .close-btn {
+      position: fixed;
+      top: 16px;
+      right: 16px;
+      width: 40px;
+      height: 40px;
+      border: none;
+      border-radius: 50%;
+      background: rgba(26,31,54,0.08);
+      color: #1A1F36;
+      font-size: 20px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    .close-btn:active { transform: scale(0.92); }
   </style>
 </head>
 <body>
+  <button class="close-btn" onclick="window.location.href='/'" aria-label="닫기">&times;</button>
   <h1>개인정보처리방침</h1>
   <p class="date">시행일: 2026년 5월 24일</p>
 
@@ -40,6 +60,6 @@
   <p>오늘뽁은 전 연령 이용 가능하며, 아동의 개인정보를 수집하지 않습니다.</p>
 
   <h2>6. 문의</h2>
-  <p>개인정보처리방침에 대한 문의: <strong>kkm450815@gmail.com</strong></p>
+  <p>개인정보처리방침에 대한 문의: <strong>wooheezin@gmail.com</strong></p>
 </body>
 </html>
