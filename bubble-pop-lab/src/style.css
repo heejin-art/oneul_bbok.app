@@ -15,8 +15,16 @@
   --glass: rgba(255, 255, 255, 0.6);
 }
 
+html {
+  color-scheme: light only !important;
+}
+
 @media (prefers-color-scheme: dark) {
-  :root { color-scheme: light; }
+  :root, html, body {
+    color-scheme: light only !important;
+    background-color: #E6F9FA !important;
+    color: #1A1F36 !important;
+  }
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
