@@ -1,0 +1,169 @@
+:root {
+  --font-kr: "Pretendard Variable", "Apple SD Gothic Neo", system-ui, sans-serif;
+  --ease-soft: cubic-bezier(0.32, 0.72, 0, 1);
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --radius-card: 24px;
+}
+
+[data-theme="capsule"] {
+  --bg-grad: radial-gradient(ellipse at top, #2A1A4A 0%, #0A0518 100%);
+  --accent-1: #FFD66B;
+  --accent-2: #E879F9;
+  --emphasis: #7C3AED;
+  --text: #F8F5FF;
+  --text-muted: rgba(248, 245, 255, 0.55);
+  --glass: rgba(255, 255, 255, 0.08);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body, #app {
+  width: 100%;
+  height: 100%;
+  overscroll-behavior: none;
+}
+
+body {
+  font-family: var(--font-kr);
+  color: var(--text);
+  background: var(--bg-grad);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+}
+
+#app {
+  position: relative;
+  overflow: hidden;
+}
+
+#scene {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.hud {
+  position: absolute;
+  top: env(safe-area-inset-top, 0);
+  left: 0;
+  right: 0;
+  padding: 16px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.hud__brand {
+  font-weight: 800;
+  font-size: 18px;
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hud__daily {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.hud__daily-label {
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.hud__daily-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--accent-1);
+  font-variant-numeric: tabular-nums;
+}
+
+.hint {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom, 0) + 48px);
+  left: 0;
+  right: 0;
+  text-align: center;
+  z-index: 5;
+  color: var(--text-muted);
+  font-size: 15px;
+  pointer-events: none;
+  animation: pulse 2.4s infinite var(--ease-soft);
+}
+
+.hint strong {
+  color: var(--accent-1);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.message {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+  padding: 24px;
+  background: rgba(10, 5, 24, 0.6);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 480ms var(--ease-soft);
+}
+
+.message[data-show="true"] {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.message__text {
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.5;
+  text-align: center;
+  max-width: 360px;
+  background: linear-gradient(135deg, var(--accent-1), var(--accent-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  margin-bottom: 40px;
+}
+
+.message__close {
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text);
+  background: var(--glass);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 14px 36px;
+  border-radius: 999px;
+  cursor: pointer;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
+.message__close:active {
+  transform: scale(0.96);
+}
