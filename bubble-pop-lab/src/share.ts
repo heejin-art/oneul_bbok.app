@@ -1,12 +1,37 @@
 // 공유 카드 생성 — canvas로 그려서 Blob 만들고 Web Share API 또는 다운로드.
 
 export type ShareCardOpts = {
-  title: string;
+  mode: "meditation" | "immersion" | "stress";
   score: number;
-  subtitle: string;
-  best?: number;
-  patternName?: string;
+  stressWord?: string;
 };
+
+const EMOTION_LINES: Record<string, string[]> = {
+  meditation: [
+    "오늘도 잘 비웠다",
+    "마음이 좀 가벼워졌어",
+    "한 알 한 알, 천천히",
+    "조용히 터뜨린 하루",
+  ],
+  immersion: [
+    "미쳤다 집중력",
+    "손가락이 알아서 움직였어",
+    "완전 몰입했다",
+    "멈출 수가 없었어",
+  ],
+};
+
+function pickEmotion(mode: string): string {
+  const lines = EMOTION_LINES[mode];
+  if (!lines) return "";
+  return lines[Math.floor(Math.random() * lines.length)];
+}
+
+function buildSubline(mode: string, score: number): string {
+  if (mode === "meditation") return `뽁뽁이 ${score}개, 조용히 터뜨림`;
+  if (mode === "immersion") return `뽁뽁이 ${score}개, 시원하게 터뜨림`;
+  return `뽁뽁이 ${score}개와 함께 안녕`;
+}
 
 export async function buildShareCard(opts: ShareCardOpts): Promise<Blob> {
   const W = 1080;
@@ -15,8 +40,9 @@ export async function buildShareCard(opts: ShareCardOpts): Promise<Blob> {
   canvas.width = W;
   canvas.height = H;
   const ctx = canvas.getContext("2d")!;
+  const font = "'NanumSquareRound', system-ui, sans-serif";
 
-  // 배경 — 버블팝 신비 그라데이션
+  // 배경
   const bg = ctx.createLinearGradient(0, 0, W, H);
   bg.addColorStop(0, "#E6F9FA");
   bg.addColorStop(0.5, "#FFF8FB");
@@ -24,7 +50,7 @@ export async function buildShareCard(opts: ShareCardOpts): Promise<Blob> {
   ctx.fillStyle = bg;
   ctx.fillRect(0, 0, W, H);
 
-  // 데코 버블 (랜덤 위치 12개)
+  // 데코 버블
   for (let i = 0; i < 12; i++) {
     const r = 40 + Math.random() * 100;
     const x = Math.random() * W;
@@ -40,55 +66,38 @@ export async function buildShareCard(opts: ShareCardOpts): Promise<Blob> {
     ctx.fill();
   }
 
-  // 브랜드
-  ctx.fillStyle = "rgba(26,31,54,0.55)";
-  ctx.font = "700 32px 'NanumSquareRound', system-ui, sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("오늘뽁 · Todapop", W / 2, 120);
 
-  // 타이틀
+  // 감정 한 줄 (메인 카피 — 크게)
+  let emotionLine: string;
+  if (opts.mode === "stress" && opts.stressWord) {
+    emotionLine = `${opts.stressWord}, 뿌셔버렸다`;
+  } else {
+    emotionLine = pickEmotion(opts.mode);
+  }
+
   ctx.fillStyle = "#1A1F36";
-  ctx.font = "800 64px 'NanumSquareRound', system-ui, sans-serif";
-  ctx.fillText(opts.title, W / 2, 240);
+  ctx.font = `900 72px ${font}`;
+  ctx.fillText(emotionLine, W / 2, 340);
 
-  // 점수
-  const scoreGrad = ctx.createLinearGradient(0, 300, W, 600);
+  // 숫자 (강조)
+  const scoreGrad = ctx.createLinearGradient(0, 400, W, 650);
   scoreGrad.addColorStop(0, "#5A6FFF");
   scoreGrad.addColorStop(1, "#FFB7D5");
   ctx.fillStyle = scoreGrad;
-  ctx.font = "900 240px 'NanumSquareRound', system-ui, sans-serif";
-  ctx.fillText(String(opts.score), W / 2, 540);
+  ctx.font = `900 220px ${font}`;
+  ctx.fillText(String(opts.score), W / 2, 600);
 
-  // 서브타이틀
-  ctx.fillStyle = "rgba(26,31,54,0.7)";
-  ctx.font = "600 36px 'NanumSquareRound', system-ui, sans-serif";
-  ctx.fillText(opts.subtitle, W / 2, 640);
+  // 서브 한 줄
+  const subline = buildSubline(opts.mode, opts.score);
+  ctx.fillStyle = "rgba(26,31,54,0.55)";
+  ctx.font = `600 36px ${font}`;
+  ctx.fillText(subline, W / 2, 700);
 
-  // 베스트
-  if (opts.best !== undefined) {
-    ctx.fillStyle = "rgba(26,31,54,0.45)";
-    ctx.font = "500 28px 'NanumSquareRound', system-ui, sans-serif";
-    ctx.fillText(`나의 베스트 ${opts.best}`, W / 2, 720);
-  }
-
-  // 패턴 이름 배지
-  if (opts.patternName) {
-    const badgeW = 360;
-    const badgeH = 70;
-    const badgeX = (W - badgeW) / 2;
-    const badgeY = 800;
-    ctx.fillStyle = "rgba(255,255,255,0.7)";
-    roundRect(ctx, badgeX, badgeY, badgeW, badgeH, 36);
-    ctx.fill();
-    ctx.fillStyle = "#5A6FFF";
-    ctx.font = "700 28px 'NanumSquareRound', system-ui, sans-serif";
-    ctx.fillText(`오늘의 패턴 — ${opts.patternName}`, W / 2, badgeY + 46);
-  }
-
-  // 푸터
-  ctx.fillStyle = "rgba(26,31,54,0.4)";
-  ctx.font = "500 24px 'NanumSquareRound', system-ui, sans-serif";
-  ctx.fillText("오늘뽁 · 스트레스를 터뜨려요", W / 2, H - 80);
+  // 브랜드 (하단, 한 번만)
+  ctx.fillStyle = "rgba(26,31,54,0.3)";
+  ctx.font = `700 28px ${font}`;
+  ctx.fillText("오늘뽁", W / 2, H - 80);
 
   return await new Promise<Blob>((resolve) =>
     canvas.toBlob((b) => resolve(b!), "image/png"),

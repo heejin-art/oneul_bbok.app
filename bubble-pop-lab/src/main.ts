@@ -891,12 +891,14 @@ btnOther.addEventListener("click", () => {
 btnShare.addEventListener("click", async () => {
   try {
     const blob = await buildShareCard({
-      title: "오늘뽁",
+      mode: mode!,
       score: sessionCount,
-      subtitle: resultPraise.textContent ?? "",
-      patternName: mode === "stress" ? stressName : undefined,
+      stressWord: mode === "stress" ? stressName : undefined,
     });
-    await shareOrDownload(blob, "todapop.png", "오늘뽁", `${sessionCount}개의 스트레스를 터뜨렸어요!`);
+    const shareText = mode === "stress" && stressName
+      ? `${stressName}, 뿌셔버렸다! 뽁뽁이 ${sessionCount}개와 함께 안녕`
+      : `뽁뽁이 ${sessionCount}개 터뜨림!`;
+    await shareOrDownload(blob, "todapop.png", "오늘뽁", shareText);
   } catch (err) { console.error("share failed", err); }
 });
 
