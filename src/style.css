@@ -724,16 +724,19 @@ body {
 
 /* 인사말을 캐릭터 옆 말풍선으로 (ID 특이도로 기존 가운데정렬 인사말 규칙 덮어쓰기) */
 #heroStats .hero__peek-bubble {
-  display: block;
+  display: flex;
+  align-items: center;       /* 세로 가운데 */
+  justify-content: center;   /* 가로 가운데 */
   position: absolute;
   z-index: 4;
   margin: 0;
-  top: calc(var(--peek-w) * -0.43);
+  /* 세로 중앙 기준 앵커 → 2줄 되면 위아래로 똑같이 커짐 */
+  top: calc(var(--peek-w) * -0.27);
+  transform: translateY(-50%);
   left: calc(clamp(6px, 2vw, 14px) + var(--peek-w) + 6px);
-  /* 오른쪽은 카드 끝까지만 — 박스 밖으로 절대 안 나가게 */
-  max-width: calc(100% - clamp(6px, 2vw, 14px) - var(--peek-w) - 20px);
-  width: max-content;
-  text-align: left;
+  /* 오른쪽 끝 = 아래 카드들 오른쪽 끝과 동일 정렬 */
+  right: 0;
+  text-align: center;
   white-space: normal;          /* 긴 인사말은 카드 안에서 줄바꿈(넘침 방지) */
   word-break: keep-all;         /* 한국어 어절 단위 줄바꿈 */
   font-size: clamp(12px, 3.3vw, 13.5px);
@@ -751,7 +754,8 @@ body {
   content: "";
   position: absolute;
   left: -7px;
-  bottom: 10px;
+  top: 50%;                  /* 말풍선 세로 중앙 → 1줄/2줄 모두 가운데 */
+  transform: translateY(-50%);
   width: 0; height: 0;
   border-top: 7px solid transparent;
   border-bottom: 7px solid transparent;
