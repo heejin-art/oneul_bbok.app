@@ -455,14 +455,15 @@ body {
 .hero.is-hidden { opacity: 0; pointer-events: none; transform: scale(1.05); }
 
 /* ===== 초기 부팅 깜빡임 방지 =====
-   JS가 인사말(빈칸)·개수(0)·배경(데코 버블)을 채우기 전까지 숨겼다가,
-   값·첫 프레임이 준비되면 부드럽게 페이드인. 첫 진입 시 0→실제, 말풍선 찌부→커짐,
-   배경 늦게 뜸 같은 깜빡임을 제거. (.hero는 이미 opacity 트랜지션 있음) */
+   JS가 인사말(빈칸)·개수(0)·배경(데코 버블)을 채우기 전까지 전부 숨겼다가,
+   값·첫 프레임이 준비되면 같은 속도(.hero와 동일 480ms)로 한 번에 페이드인.
+   HUD(좌상단 '오늘뽁' 브랜드 포함)도 같이 숨겨, '브랜드만 먼저 뜬 뒤 홈' 2단계 제거.
+   첫 진입 시 0→실제, 말풍선 찌부→커짐, 배경 늦게 뜸 같은 깜빡임을 한꺼번에 제거. */
 #scene,
-.hud__counters { transition: opacity 320ms ease; }
+.hud { transition: opacity 480ms var(--ease-soft); }
 html.booting #scene,
 html.booting .hero,
-html.booting .hud__counters { opacity: 0 !important; }
+html.booting .hud { opacity: 0 !important; }
 
 .hero__brand {
   font-size: 11px; font-weight: 800; letter-spacing: 6px;

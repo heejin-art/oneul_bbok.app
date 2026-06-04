@@ -1057,10 +1057,10 @@ function tick() {
 }
 tick();
 
-// 첫 프레임 렌더 + 인사말/개수 세팅 완료 → 홈 페이드인 (초기 깜빡임 방지)
-requestAnimationFrame(() => requestAnimationFrame(() => {
+// 첫 프레임 렌더 + 인사말/개수 세팅 완료 → 홈(HUD·배경 포함) 한 번에 페이드인 (초기 깜빡임 방지)
+requestAnimationFrame(() => {
   document.documentElement.classList.remove("booting");
-}));
+});
 
 // Android 뒤로가기 버튼
 window.addEventListener("popstate", () => {
