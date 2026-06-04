@@ -13,7 +13,12 @@
     <meta name="description" content="오늘의 스트레스, 뽁뽁 터뜨려서 날려버리세요. 무한 뽁뽁이 피젯 게임." />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/icons/icon-192.png" />
-    <link rel="stylesheet" href="https://hangeul.pstatic.net/hangeul_static/css/nanum-square-round.css" />
+    <!-- 첫 페인트를 무조건 파스텔로(흰 화면 방지). 외부 CSS 로딩과 무관하게 즉시 적용 -->
+    <style>html,body{margin:0;background:#E6F9FA;background:linear-gradient(180deg,#E6F9FA 0%,#FFF8FB 100%)}</style>
+    <!-- 폰트 CSS는 렌더를 막지 않게 비동기 로드(시스템 글꼴로 먼저 뜨고 뒤에 교체) → 흰 화면 1-2초 제거 -->
+    <link rel="preconnect" href="https://hangeul.pstatic.net" crossorigin />
+    <link rel="preload" as="style" href="https://hangeul.pstatic.net/hangeul_static/css/nanum-square-round.css" onload="this.onload=null;this.rel='stylesheet'" />
+    <noscript><link rel="stylesheet" href="https://hangeul.pstatic.net/hangeul_static/css/nanum-square-round.css" /></noscript>
     <link rel="stylesheet" href="/src/style.css" />
     <title>오늘뽁 · Todapop</title>
     <!-- 최초 실행 판별: 온보딩 미완료면 ob-show (렌더 전 실행해 홈 깜빡임 방지) -->
