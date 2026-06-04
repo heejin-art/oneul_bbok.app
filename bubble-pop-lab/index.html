@@ -17,7 +17,8 @@
     <link rel="stylesheet" href="/src/style.css" />
     <title>오늘뽁 · Todapop</title>
     <!-- 최초 실행 판별: 온보딩 미완료면 ob-show (렌더 전 실행해 홈 깜빡임 방지) -->
-    <script>try{if(!localStorage.getItem('ob_done'))document.documentElement.classList.add('ob-show');}catch(e){}</script>
+    <!-- booting: JS가 인사말/개수/배경을 채우기 전까지 홈을 숨겨 첫 진입 깜빡임 방지 (1.5s 안전 해제) -->
+    <script>(function(){var d=document.documentElement;d.classList.add('booting');try{if(!localStorage.getItem('ob_done'))d.classList.add('ob-show');}catch(e){}setTimeout(function(){d.classList.remove('booting');},1500);})();</script>
   </head>
   <body data-theme="bubble" class="design-b">
     <main id="app">

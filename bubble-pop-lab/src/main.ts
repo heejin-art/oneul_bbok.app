@@ -1057,6 +1057,11 @@ function tick() {
 }
 tick();
 
+// 첫 프레임 렌더 + 인사말/개수 세팅 완료 → 홈 페이드인 (초기 깜빡임 방지)
+requestAnimationFrame(() => requestAnimationFrame(() => {
+  document.documentElement.classList.remove("booting");
+}));
+
 // Android 뒤로가기 버튼
 window.addEventListener("popstate", () => {
   if (privacyOverlay.getAttribute("data-show") === "true") {
